@@ -65,6 +65,7 @@ version = "0.17"
 git = "https://github.com/gfx-rs/naga"
 rev = "df8107b7"
 version = "0.13.0"
+features = ["wgsl-out"]
 
 [dependencies]
 raw-window-handle = "0.5"
@@ -73,9 +74,11 @@ log = "0.4"
 thiserror = "1"
 parking_lot = "0.12"
 smallvec = "1"
+naga_oil_c = { path = "naga_oil_c" }
 
 [build-dependencies]
 bindgen = "0.66"
+cbindgen = "*"
 
 [workspace]
 resolver = "2"

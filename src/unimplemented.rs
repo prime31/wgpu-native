@@ -1,5 +1,9 @@
 use crate::native;
 
+// forces the crate to be compiled into the static/dynamic lib
+#[allow(unused)]
+use naga_oil_c::ComposableModuleDescriptor;
+
 #[no_mangle]
 pub extern "C" fn wgpuGetProcAddress(
     _device: native::WGPUDevice,
