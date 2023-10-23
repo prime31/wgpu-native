@@ -1,0 +1,22 @@
+[package]
+name = "naga_oil_c"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+naga_oil = "*"
+naga = "0.13.0"
+
+[build-dependencies]
+cbindgen = "*"
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+opt-level = "z"  # Optimize for size.
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Cross compile for windows:
+# `rustup target add x86_64-pc-windows-gnu`
+# `cargo build --target x86_64-pc-windows-gnu`
