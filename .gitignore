@@ -6,3 +6,4 @@
 build
 dist
 .idea
+zig_tester/zig-cache
