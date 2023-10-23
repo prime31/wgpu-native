@@ -7,3 +7,4 @@ build
 dist
 .idea
 zig_tester/zig-cache
+zig_tester/wgpu_generator/spec.json
