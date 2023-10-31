@@ -189,6 +189,7 @@ pub const rsize_t = c_ulong;
 pub const wchar_t = c_int;
 pub const max_align_t = c_longdouble;
 pub const WGPUFlags = u32;
+pub const WGPUBool = u32;
 pub const struct_WGPUAdapterImpl = opaque {};
 pub const WGPUAdapter = ?*struct_WGPUAdapterImpl;
 pub const struct_WGPUBindGroupImpl = opaque {};
@@ -229,8 +230,6 @@ pub const struct_WGPUShaderModuleImpl = opaque {};
 pub const WGPUShaderModule = ?*struct_WGPUShaderModuleImpl;
 pub const struct_WGPUSurfaceImpl = opaque {};
 pub const WGPUSurface = ?*struct_WGPUSurfaceImpl;
-pub const struct_WGPUSwapChainImpl = opaque {};
-pub const WGPUSwapChain = ?*struct_WGPUSwapChainImpl;
 pub const struct_WGPUTextureImpl = opaque {};
 pub const WGPUTexture = ?*struct_WGPUTextureImpl;
 pub const struct_WGPUTextureViewImpl = opaque {};
@@ -262,14 +261,15 @@ pub const WGPUAdapterType_Unknown: c_int = 3;
 pub const WGPUAdapterType_Force32: c_int = 2147483647;
 pub const enum_WGPUAdapterType = c_uint;
 pub const WGPUAdapterType = enum_WGPUAdapterType;
-pub const WGPUBackendType_Null: c_int = 0;
-pub const WGPUBackendType_WebGPU: c_int = 1;
-pub const WGPUBackendType_D3D11: c_int = 2;
-pub const WGPUBackendType_D3D12: c_int = 3;
-pub const WGPUBackendType_Metal: c_int = 4;
-pub const WGPUBackendType_Vulkan: c_int = 5;
-pub const WGPUBackendType_OpenGL: c_int = 6;
-pub const WGPUBackendType_OpenGLES: c_int = 7;
+pub const WGPUBackendType_Undefined: c_int = 0;
+pub const WGPUBackendType_Null: c_int = 1;
+pub const WGPUBackendType_WebGPU: c_int = 2;
+pub const WGPUBackendType_D3D11: c_int = 3;
+pub const WGPUBackendType_D3D12: c_int = 4;
+pub const WGPUBackendType_Metal: c_int = 5;
+pub const WGPUBackendType_Vulkan: c_int = 6;
+pub const WGPUBackendType_OpenGL: c_int = 7;
+pub const WGPUBackendType_OpenGLES: c_int = 8;
 pub const WGPUBackendType_Force32: c_int = 2147483647;
 pub const enum_WGPUBackendType = c_uint;
 pub const WGPUBackendType = enum_WGPUBackendType;
@@ -337,7 +337,7 @@ pub const WGPUBufferBindingType = enum_WGPUBufferBindingType;
 pub const struct_WGPUBufferBindingLayout = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     type: WGPUBufferBindingType = @import("std").mem.zeroes(WGPUBufferBindingType),
-    hasDynamicOffset: bool = @import("std").mem.zeroes(bool),
+    hasDynamicOffset: WGPUBool = @import("std").mem.zeroes(WGPUBool),
     minBindingSize: u64 = @import("std").mem.zeroes(u64),
 };
 pub const WGPUBufferUsageFlags = WGPUFlags;
@@ -346,7 +346,7 @@ pub const struct_WGPUBufferDescriptor = extern struct {
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
     usage: WGPUBufferUsageFlags = @import("std").mem.zeroes(WGPUBufferUsageFlags),
     size: u64 = @import("std").mem.zeroes(u64),
-    mappedAtCreation: bool = @import("std").mem.zeroes(bool),
+    mappedAtCreation: WGPUBool = @import("std").mem.zeroes(WGPUBool),
 };
 pub const struct_WGPUColor = extern struct {
     r: f64 = @import("std").mem.zeroes(f64),
@@ -380,15 +380,10 @@ pub const struct_WGPUCompilationMessage = extern struct {
     utf16Offset: u64 = @import("std").mem.zeroes(u64),
     utf16Length: u64 = @import("std").mem.zeroes(u64),
 };
-pub const WGPUComputePassTimestampLocation_Beginning: c_int = 0;
-pub const WGPUComputePassTimestampLocation_End: c_int = 1;
-pub const WGPUComputePassTimestampLocation_Force32: c_int = 2147483647;
-pub const enum_WGPUComputePassTimestampLocation = c_uint;
-pub const WGPUComputePassTimestampLocation = enum_WGPUComputePassTimestampLocation;
-pub const struct_WGPUComputePassTimestampWrite = extern struct {
+pub const struct_WGPUComputePassTimestampWrites = extern struct {
     querySet: WGPUQuerySet = @import("std").mem.zeroes(WGPUQuerySet),
-    queryIndex: u32 = @import("std").mem.zeroes(u32),
-    location: WGPUComputePassTimestampLocation = @import("std").mem.zeroes(WGPUComputePassTimestampLocation),
+    beginningOfPassWriteIndex: u32 = @import("std").mem.zeroes(u32),
+    endOfPassWriteIndex: u32 = @import("std").mem.zeroes(u32),
 };
 pub const struct_WGPUConstantEntry = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
@@ -409,6 +404,7 @@ pub const struct_WGPULimits = extern struct {
     maxTextureDimension3D: u32 = @import("std").mem.zeroes(u32),
     maxTextureArrayLayers: u32 = @import("std").mem.zeroes(u32),
     maxBindGroups: u32 = @import("std").mem.zeroes(u32),
+    maxBindGroupsPlusVertexBuffers: u32 = @import("std").mem.zeroes(u32),
     maxBindingsPerBindGroup: u32 = @import("std").mem.zeroes(u32),
     maxDynamicUniformBuffersPerPipelineLayout: u32 = @import("std").mem.zeroes(u32),
     maxDynamicStorageBuffersPerPipelineLayout: u32 = @import("std").mem.zeroes(u32),
@@ -440,7 +436,7 @@ pub const struct_WGPUMultisampleState = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     count: u32 = @import("std").mem.zeroes(u32),
     mask: u32 = @import("std").mem.zeroes(u32),
-    alphaToCoverageEnabled: bool = @import("std").mem.zeroes(bool),
+    alphaToCoverageEnabled: WGPUBool = @import("std").mem.zeroes(WGPUBool),
 };
 pub const struct_WGPUOrigin3D = extern struct {
     x: u32 = @import("std").mem.zeroes(u32),
@@ -450,12 +446,12 @@ pub const struct_WGPUOrigin3D = extern struct {
 pub const struct_WGPUPipelineLayoutDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    bindGroupLayoutCount: u32 = @import("std").mem.zeroes(u32),
+    bindGroupLayoutCount: usize = @import("std").mem.zeroes(usize),
     bindGroupLayouts: [*c]const WGPUBindGroupLayout = @import("std").mem.zeroes([*c]const WGPUBindGroupLayout),
 };
 pub const struct_WGPUPrimitiveDepthClipControl = extern struct {
     chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
-    unclippedDepth: bool = @import("std").mem.zeroes(bool),
+    unclippedDepth: WGPUBool = @import("std").mem.zeroes(WGPUBool),
 };
 pub const WGPUPrimitiveTopology_PointList: c_int = 0;
 pub const WGPUPrimitiveTopology_LineList: c_int = 1;
@@ -509,7 +505,7 @@ pub const struct_WGPUQuerySetDescriptor = extern struct {
     type: WGPUQueryType = @import("std").mem.zeroes(WGPUQueryType),
     count: u32 = @import("std").mem.zeroes(u32),
     pipelineStatistics: [*c]const WGPUPipelineStatisticName = @import("std").mem.zeroes([*c]const WGPUPipelineStatisticName),
-    pipelineStatisticsCount: u32 = @import("std").mem.zeroes(u32),
+    pipelineStatisticCount: usize = @import("std").mem.zeroes(usize),
 };
 pub const struct_WGPUQueueDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
@@ -620,12 +616,12 @@ pub const WGPUTextureFormat = enum_WGPUTextureFormat;
 pub const struct_WGPURenderBundleEncoderDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    colorFormatsCount: u32 = @import("std").mem.zeroes(u32),
+    colorFormatCount: usize = @import("std").mem.zeroes(usize),
     colorFormats: [*c]const WGPUTextureFormat = @import("std").mem.zeroes([*c]const WGPUTextureFormat),
     depthStencilFormat: WGPUTextureFormat = @import("std").mem.zeroes(WGPUTextureFormat),
     sampleCount: u32 = @import("std").mem.zeroes(u32),
-    depthReadOnly: bool = @import("std").mem.zeroes(bool),
-    stencilReadOnly: bool = @import("std").mem.zeroes(bool),
+    depthReadOnly: WGPUBool = @import("std").mem.zeroes(WGPUBool),
+    stencilReadOnly: WGPUBool = @import("std").mem.zeroes(WGPUBool),
 };
 pub const WGPULoadOp_Undefined: c_int = 0;
 pub const WGPULoadOp_Clear: c_int = 1;
@@ -644,25 +640,20 @@ pub const struct_WGPURenderPassDepthStencilAttachment = extern struct {
     depthLoadOp: WGPULoadOp = @import("std").mem.zeroes(WGPULoadOp),
     depthStoreOp: WGPUStoreOp = @import("std").mem.zeroes(WGPUStoreOp),
     depthClearValue: f32 = @import("std").mem.zeroes(f32),
-    depthReadOnly: bool = @import("std").mem.zeroes(bool),
+    depthReadOnly: WGPUBool = @import("std").mem.zeroes(WGPUBool),
     stencilLoadOp: WGPULoadOp = @import("std").mem.zeroes(WGPULoadOp),
     stencilStoreOp: WGPUStoreOp = @import("std").mem.zeroes(WGPUStoreOp),
     stencilClearValue: u32 = @import("std").mem.zeroes(u32),
-    stencilReadOnly: bool = @import("std").mem.zeroes(bool),
+    stencilReadOnly: WGPUBool = @import("std").mem.zeroes(WGPUBool),
 };
 pub const struct_WGPURenderPassDescriptorMaxDrawCount = extern struct {
     chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
     maxDrawCount: u64 = @import("std").mem.zeroes(u64),
 };
-pub const WGPURenderPassTimestampLocation_Beginning: c_int = 0;
-pub const WGPURenderPassTimestampLocation_End: c_int = 1;
-pub const WGPURenderPassTimestampLocation_Force32: c_int = 2147483647;
-pub const enum_WGPURenderPassTimestampLocation = c_uint;
-pub const WGPURenderPassTimestampLocation = enum_WGPURenderPassTimestampLocation;
-pub const struct_WGPURenderPassTimestampWrite = extern struct {
+pub const struct_WGPURenderPassTimestampWrites = extern struct {
     querySet: WGPUQuerySet = @import("std").mem.zeroes(WGPUQuerySet),
-    queryIndex: u32 = @import("std").mem.zeroes(u32),
-    location: WGPURenderPassTimestampLocation = @import("std").mem.zeroes(WGPURenderPassTimestampLocation),
+    beginningOfPassWriteIndex: u32 = @import("std").mem.zeroes(u32),
+    endOfPassWriteIndex: u32 = @import("std").mem.zeroes(u32),
 };
 pub const WGPUPowerPreference_Undefined: c_int = 0;
 pub const WGPUPowerPreference_LowPower: c_int = 1;
@@ -674,7 +665,8 @@ pub const struct_WGPURequestAdapterOptions = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     compatibleSurface: WGPUSurface = @import("std").mem.zeroes(WGPUSurface),
     powerPreference: WGPUPowerPreference = @import("std").mem.zeroes(WGPUPowerPreference),
-    forceFallbackAdapter: bool = @import("std").mem.zeroes(bool),
+    backendType: WGPUBackendType = @import("std").mem.zeroes(WGPUBackendType),
+    forceFallbackAdapter: WGPUBool = @import("std").mem.zeroes(WGPUBool),
 };
 pub const WGPUSamplerBindingType_Undefined: c_int = 0;
 pub const WGPUSamplerBindingType_Filtering: c_int = 1;
@@ -781,6 +773,43 @@ pub const struct_WGPUStorageTextureBindingLayout = extern struct {
     format: WGPUTextureFormat = @import("std").mem.zeroes(WGPUTextureFormat),
     viewDimension: WGPUTextureViewDimension = @import("std").mem.zeroes(WGPUTextureViewDimension),
 };
+pub const WGPUPresentMode_Fifo: c_int = 0;
+pub const WGPUPresentMode_FifoRelaxed: c_int = 1;
+pub const WGPUPresentMode_Immediate: c_int = 2;
+pub const WGPUPresentMode_Mailbox: c_int = 3;
+pub const WGPUPresentMode_Force32: c_int = 2147483647;
+pub const enum_WGPUPresentMode = c_uint;
+pub const WGPUPresentMode = enum_WGPUPresentMode;
+pub const WGPUCompositeAlphaMode_Auto: c_int = 0;
+pub const WGPUCompositeAlphaMode_Opaque: c_int = 1;
+pub const WGPUCompositeAlphaMode_Premultiplied: c_int = 2;
+pub const WGPUCompositeAlphaMode_Unpremultiplied: c_int = 3;
+pub const WGPUCompositeAlphaMode_Inherit: c_int = 4;
+pub const WGPUCompositeAlphaMode_Force32: c_int = 2147483647;
+pub const enum_WGPUCompositeAlphaMode = c_uint;
+pub const WGPUCompositeAlphaMode = enum_WGPUCompositeAlphaMode;
+pub const struct_WGPUSurfaceCapabilities = extern struct {
+    nextInChain: [*c]WGPUChainedStructOut = @import("std").mem.zeroes([*c]WGPUChainedStructOut),
+    formatCount: usize = @import("std").mem.zeroes(usize),
+    formats: [*c]WGPUTextureFormat = @import("std").mem.zeroes([*c]WGPUTextureFormat),
+    presentModeCount: usize = @import("std").mem.zeroes(usize),
+    presentModes: [*c]WGPUPresentMode = @import("std").mem.zeroes([*c]WGPUPresentMode),
+    alphaModeCount: usize = @import("std").mem.zeroes(usize),
+    alphaModes: [*c]WGPUCompositeAlphaMode = @import("std").mem.zeroes([*c]WGPUCompositeAlphaMode),
+};
+pub const WGPUTextureUsageFlags = WGPUFlags;
+pub const struct_WGPUSurfaceConfiguration = extern struct {
+    nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
+    device: WGPUDevice = @import("std").mem.zeroes(WGPUDevice),
+    format: WGPUTextureFormat = @import("std").mem.zeroes(WGPUTextureFormat),
+    usage: WGPUTextureUsageFlags = @import("std").mem.zeroes(WGPUTextureUsageFlags),
+    viewFormatCount: usize = @import("std").mem.zeroes(usize),
+    viewFormats: [*c]const WGPUTextureFormat = @import("std").mem.zeroes([*c]const WGPUTextureFormat),
+    alphaMode: WGPUCompositeAlphaMode = @import("std").mem.zeroes(WGPUCompositeAlphaMode),
+    width: u32 = @import("std").mem.zeroes(u32),
+    height: u32 = @import("std").mem.zeroes(u32),
+    presentMode: WGPUPresentMode = @import("std").mem.zeroes(WGPUPresentMode),
+};
 pub const struct_WGPUSurfaceDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
@@ -817,21 +846,19 @@ pub const struct_WGPUSurfaceDescriptorFromXlibWindow = extern struct {
     display: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
     window: u32 = @import("std").mem.zeroes(u32),
 };
-pub const WGPUTextureUsageFlags = WGPUFlags;
-pub const WGPUPresentMode_Immediate: c_int = 0;
-pub const WGPUPresentMode_Mailbox: c_int = 1;
-pub const WGPUPresentMode_Fifo: c_int = 2;
-pub const WGPUPresentMode_Force32: c_int = 2147483647;
-pub const enum_WGPUPresentMode = c_uint;
-pub const WGPUPresentMode = enum_WGPUPresentMode;
-pub const struct_WGPUSwapChainDescriptor = extern struct {
-    nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
-    label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    usage: WGPUTextureUsageFlags = @import("std").mem.zeroes(WGPUTextureUsageFlags),
-    format: WGPUTextureFormat = @import("std").mem.zeroes(WGPUTextureFormat),
-    width: u32 = @import("std").mem.zeroes(u32),
-    height: u32 = @import("std").mem.zeroes(u32),
-    presentMode: WGPUPresentMode = @import("std").mem.zeroes(WGPUPresentMode),
+pub const WGPUSurfaceGetCurrentTextureStatus_Success: c_int = 0;
+pub const WGPUSurfaceGetCurrentTextureStatus_Timeout: c_int = 1;
+pub const WGPUSurfaceGetCurrentTextureStatus_Outdated: c_int = 2;
+pub const WGPUSurfaceGetCurrentTextureStatus_Lost: c_int = 3;
+pub const WGPUSurfaceGetCurrentTextureStatus_OutOfMemory: c_int = 4;
+pub const WGPUSurfaceGetCurrentTextureStatus_DeviceLost: c_int = 5;
+pub const WGPUSurfaceGetCurrentTextureStatus_Force32: c_int = 2147483647;
+pub const enum_WGPUSurfaceGetCurrentTextureStatus = c_uint;
+pub const WGPUSurfaceGetCurrentTextureStatus = enum_WGPUSurfaceGetCurrentTextureStatus;
+pub const struct_WGPUSurfaceTexture = extern struct {
+    texture: WGPUTexture = @import("std").mem.zeroes(WGPUTexture),
+    suboptimal: WGPUBool = @import("std").mem.zeroes(WGPUBool),
+    status: WGPUSurfaceGetCurrentTextureStatus = @import("std").mem.zeroes(WGPUSurfaceGetCurrentTextureStatus),
 };
 pub const WGPUTextureSampleType_Undefined: c_int = 0;
 pub const WGPUTextureSampleType_Float: c_int = 1;
@@ -846,7 +873,7 @@ pub const struct_WGPUTextureBindingLayout = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     sampleType: WGPUTextureSampleType = @import("std").mem.zeroes(WGPUTextureSampleType),
     viewDimension: WGPUTextureViewDimension = @import("std").mem.zeroes(WGPUTextureViewDimension),
-    multisampled: bool = @import("std").mem.zeroes(bool),
+    multisampled: WGPUBool = @import("std").mem.zeroes(WGPUBool),
 };
 pub const struct_WGPUTextureDataLayout = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
@@ -915,7 +942,7 @@ pub const struct_WGPUBindGroupDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
     layout: WGPUBindGroupLayout = @import("std").mem.zeroes(WGPUBindGroupLayout),
-    entryCount: u32 = @import("std").mem.zeroes(u32),
+    entryCount: usize = @import("std").mem.zeroes(usize),
     entries: [*c]const WGPUBindGroupEntry = @import("std").mem.zeroes([*c]const WGPUBindGroupEntry),
 };
 pub const WGPUShaderStageFlags = WGPUFlags;
@@ -940,21 +967,20 @@ pub const struct_WGPUBlendState = extern struct {
 pub const WGPUCompilationMessage = struct_WGPUCompilationMessage;
 pub const struct_WGPUCompilationInfo = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
-    messageCount: u32 = @import("std").mem.zeroes(u32),
+    messageCount: usize = @import("std").mem.zeroes(usize),
     messages: [*c]const WGPUCompilationMessage = @import("std").mem.zeroes([*c]const WGPUCompilationMessage),
 };
-pub const WGPUComputePassTimestampWrite = struct_WGPUComputePassTimestampWrite;
+pub const WGPUComputePassTimestampWrites = struct_WGPUComputePassTimestampWrites;
 pub const struct_WGPUComputePassDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    timestampWriteCount: u32 = @import("std").mem.zeroes(u32),
-    timestampWrites: [*c]const WGPUComputePassTimestampWrite = @import("std").mem.zeroes([*c]const WGPUComputePassTimestampWrite),
+    timestampWrites: [*c]const WGPUComputePassTimestampWrites = @import("std").mem.zeroes([*c]const WGPUComputePassTimestampWrites),
 };
 pub const WGPUStencilFaceState = struct_WGPUStencilFaceState;
 pub const struct_WGPUDepthStencilState = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     format: WGPUTextureFormat = @import("std").mem.zeroes(WGPUTextureFormat),
-    depthWriteEnabled: bool = @import("std").mem.zeroes(bool),
+    depthWriteEnabled: WGPUBool = @import("std").mem.zeroes(WGPUBool),
     depthCompare: WGPUCompareFunction = @import("std").mem.zeroes(WGPUCompareFunction),
     stencilFront: WGPUStencilFaceState = @import("std").mem.zeroes(WGPUStencilFaceState),
     stencilBack: WGPUStencilFaceState = @import("std").mem.zeroes(WGPUStencilFaceState),
@@ -983,11 +1009,12 @@ pub const struct_WGPUProgrammableStageDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     module: WGPUShaderModule = @import("std").mem.zeroes(WGPUShaderModule),
     entryPoint: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    constantCount: u32 = @import("std").mem.zeroes(u32),
+    constantCount: usize = @import("std").mem.zeroes(usize),
     constants: [*c]const WGPUConstantEntry = @import("std").mem.zeroes([*c]const WGPUConstantEntry),
 };
 pub const WGPUColor = struct_WGPUColor;
 pub const struct_WGPURenderPassColorAttachment = extern struct {
+    nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     view: WGPUTextureView = @import("std").mem.zeroes(WGPUTextureView),
     resolveTarget: WGPUTextureView = @import("std").mem.zeroes(WGPUTextureView),
     loadOp: WGPULoadOp = @import("std").mem.zeroes(WGPULoadOp),
@@ -1003,7 +1030,7 @@ pub const WGPUShaderModuleCompilationHint = struct_WGPUShaderModuleCompilationHi
 pub const struct_WGPUShaderModuleDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    hintCount: u32 = @import("std").mem.zeroes(u32),
+    hintCount: usize = @import("std").mem.zeroes(usize),
     hints: [*c]const WGPUShaderModuleCompilationHint = @import("std").mem.zeroes([*c]const WGPUShaderModuleCompilationHint),
 };
 pub const struct_WGPUSupportedLimits = extern struct {
@@ -1026,7 +1053,7 @@ pub const struct_WGPUTextureDescriptor = extern struct {
     format: WGPUTextureFormat = @import("std").mem.zeroes(WGPUTextureFormat),
     mipLevelCount: u32 = @import("std").mem.zeroes(u32),
     sampleCount: u32 = @import("std").mem.zeroes(u32),
-    viewFormatCount: u32 = @import("std").mem.zeroes(u32),
+    viewFormatCount: usize = @import("std").mem.zeroes(usize),
     viewFormats: [*c]const WGPUTextureFormat = @import("std").mem.zeroes([*c]const WGPUTextureFormat),
 };
 pub const WGPUVertexStepMode_Vertex: c_int = 0;
@@ -1039,14 +1066,14 @@ pub const WGPUVertexAttribute = struct_WGPUVertexAttribute;
 pub const struct_WGPUVertexBufferLayout = extern struct {
     arrayStride: u64 = @import("std").mem.zeroes(u64),
     stepMode: WGPUVertexStepMode = @import("std").mem.zeroes(WGPUVertexStepMode),
-    attributeCount: u32 = @import("std").mem.zeroes(u32),
+    attributeCount: usize = @import("std").mem.zeroes(usize),
     attributes: [*c]const WGPUVertexAttribute = @import("std").mem.zeroes([*c]const WGPUVertexAttribute),
 };
 pub const WGPUBindGroupLayoutEntry = struct_WGPUBindGroupLayoutEntry;
 pub const struct_WGPUBindGroupLayoutDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    entryCount: u32 = @import("std").mem.zeroes(u32),
+    entryCount: usize = @import("std").mem.zeroes(usize),
     entries: [*c]const WGPUBindGroupLayoutEntry = @import("std").mem.zeroes([*c]const WGPUBindGroupLayoutEntry),
 };
 pub const WGPUBlendState = struct_WGPUBlendState;
@@ -1091,7 +1118,7 @@ pub const WGPUDeviceLostCallback = ?*const fn (WGPUDeviceLostReason, [*c]const u
 pub const struct_WGPUDeviceDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    requiredFeaturesCount: u32 = @import("std").mem.zeroes(u32),
+    requiredFeatureCount: usize = @import("std").mem.zeroes(usize),
     requiredFeatures: [*c]const WGPUFeatureName = @import("std").mem.zeroes([*c]const WGPUFeatureName),
     requiredLimits: [*c]const WGPURequiredLimits = @import("std").mem.zeroes([*c]const WGPURequiredLimits),
     defaultQueue: WGPUQueueDescriptor = @import("std").mem.zeroes(WGPUQueueDescriptor),
@@ -1100,25 +1127,24 @@ pub const struct_WGPUDeviceDescriptor = extern struct {
 };
 pub const WGPURenderPassColorAttachment = struct_WGPURenderPassColorAttachment;
 pub const WGPURenderPassDepthStencilAttachment = struct_WGPURenderPassDepthStencilAttachment;
-pub const WGPURenderPassTimestampWrite = struct_WGPURenderPassTimestampWrite;
+pub const WGPURenderPassTimestampWrites = struct_WGPURenderPassTimestampWrites;
 pub const struct_WGPURenderPassDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    colorAttachmentCount: u32 = @import("std").mem.zeroes(u32),
+    colorAttachmentCount: usize = @import("std").mem.zeroes(usize),
     colorAttachments: [*c]const WGPURenderPassColorAttachment = @import("std").mem.zeroes([*c]const WGPURenderPassColorAttachment),
     depthStencilAttachment: [*c]const WGPURenderPassDepthStencilAttachment = @import("std").mem.zeroes([*c]const WGPURenderPassDepthStencilAttachment),
     occlusionQuerySet: WGPUQuerySet = @import("std").mem.zeroes(WGPUQuerySet),
-    timestampWriteCount: u32 = @import("std").mem.zeroes(u32),
-    timestampWrites: [*c]const WGPURenderPassTimestampWrite = @import("std").mem.zeroes([*c]const WGPURenderPassTimestampWrite),
+    timestampWrites: [*c]const WGPURenderPassTimestampWrites = @import("std").mem.zeroes([*c]const WGPURenderPassTimestampWrites),
 };
 pub const WGPUVertexBufferLayout = struct_WGPUVertexBufferLayout;
 pub const struct_WGPUVertexState = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     module: WGPUShaderModule = @import("std").mem.zeroes(WGPUShaderModule),
     entryPoint: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    constantCount: u32 = @import("std").mem.zeroes(u32),
+    constantCount: usize = @import("std").mem.zeroes(usize),
     constants: [*c]const WGPUConstantEntry = @import("std").mem.zeroes([*c]const WGPUConstantEntry),
-    bufferCount: u32 = @import("std").mem.zeroes(u32),
+    bufferCount: usize = @import("std").mem.zeroes(usize),
     buffers: [*c]const WGPUVertexBufferLayout = @import("std").mem.zeroes([*c]const WGPUVertexBufferLayout),
 };
 pub const WGPUColorTargetState = struct_WGPUColorTargetState;
@@ -1126,9 +1152,9 @@ pub const struct_WGPUFragmentState = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     module: WGPUShaderModule = @import("std").mem.zeroes(WGPUShaderModule),
     entryPoint: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
-    constantCount: u32 = @import("std").mem.zeroes(u32),
+    constantCount: usize = @import("std").mem.zeroes(usize),
     constants: [*c]const WGPUConstantEntry = @import("std").mem.zeroes([*c]const WGPUConstantEntry),
-    targetCount: u32 = @import("std").mem.zeroes(u32),
+    targetCount: usize = @import("std").mem.zeroes(usize),
     targets: [*c]const WGPUColorTargetState = @import("std").mem.zeroes([*c]const WGPUColorTargetState),
 };
 pub const WGPUVertexState = struct_WGPUVertexState;
@@ -1285,6 +1311,8 @@ pub const WGPURequestAdapterOptions = struct_WGPURequestAdapterOptions;
 pub const WGPUSamplerDescriptor = struct_WGPUSamplerDescriptor;
 pub const WGPUShaderModuleSPIRVDescriptor = struct_WGPUShaderModuleSPIRVDescriptor;
 pub const WGPUShaderModuleWGSLDescriptor = struct_WGPUShaderModuleWGSLDescriptor;
+pub const WGPUSurfaceCapabilities = struct_WGPUSurfaceCapabilities;
+pub const WGPUSurfaceConfiguration = struct_WGPUSurfaceConfiguration;
 pub const WGPUSurfaceDescriptor = struct_WGPUSurfaceDescriptor;
 pub const WGPUSurfaceDescriptorFromAndroidNativeWindow = struct_WGPUSurfaceDescriptorFromAndroidNativeWindow;
 pub const WGPUSurfaceDescriptorFromCanvasHTMLSelector = struct_WGPUSurfaceDescriptorFromCanvasHTMLSelector;
@@ -1293,7 +1321,7 @@ pub const WGPUSurfaceDescriptorFromWaylandSurface = struct_WGPUSurfaceDescriptor
 pub const WGPUSurfaceDescriptorFromWindowsHWND = struct_WGPUSurfaceDescriptorFromWindowsHWND;
 pub const WGPUSurfaceDescriptorFromXcbWindow = struct_WGPUSurfaceDescriptorFromXcbWindow;
 pub const WGPUSurfaceDescriptorFromXlibWindow = struct_WGPUSurfaceDescriptorFromXlibWindow;
-pub const WGPUSwapChainDescriptor = struct_WGPUSwapChainDescriptor;
+pub const WGPUSurfaceTexture = struct_WGPUSurfaceTexture;
 pub const WGPUTextureViewDescriptor = struct_WGPUTextureViewDescriptor;
 pub const WGPUBindGroupDescriptor = struct_WGPUBindGroupDescriptor;
 pub const WGPUCompilationInfo = struct_WGPUCompilationInfo;
@@ -1311,9 +1339,9 @@ pub const WGPURenderPipelineDescriptor = struct_WGPURenderPipelineDescriptor;
 pub const WGPUProcCreateInstance = ?*const fn ([*c]const WGPUInstanceDescriptor) callconv(.C) WGPUInstance;
 pub const WGPUProcGetProcAddress = ?*const fn (WGPUDevice, [*c]const u8) callconv(.C) WGPUProc;
 pub const WGPUProcAdapterEnumerateFeatures = ?*const fn (WGPUAdapter, [*c]WGPUFeatureName) callconv(.C) usize;
-pub const WGPUProcAdapterGetLimits = ?*const fn (WGPUAdapter, [*c]WGPUSupportedLimits) callconv(.C) bool;
+pub const WGPUProcAdapterGetLimits = ?*const fn (WGPUAdapter, [*c]WGPUSupportedLimits) callconv(.C) WGPUBool;
 pub const WGPUProcAdapterGetProperties = ?*const fn (WGPUAdapter, [*c]WGPUAdapterProperties) callconv(.C) void;
-pub const WGPUProcAdapterHasFeature = ?*const fn (WGPUAdapter, WGPUFeatureName) callconv(.C) bool;
+pub const WGPUProcAdapterHasFeature = ?*const fn (WGPUAdapter, WGPUFeatureName) callconv(.C) WGPUBool;
 pub const WGPUProcAdapterRequestDevice = ?*const fn (WGPUAdapter, [*c]const WGPUDeviceDescriptor, WGPURequestDeviceCallback, ?*anyopaque) callconv(.C) void;
 pub const WGPUProcAdapterReference = ?*const fn (WGPUAdapter) callconv(.C) void;
 pub const WGPUProcAdapterRelease = ?*const fn (WGPUAdapter) callconv(.C) void;
@@ -1328,7 +1356,7 @@ pub const WGPUProcBufferGetConstMappedRange = ?*const fn (WGPUBuffer, usize, usi
 pub const WGPUProcBufferGetMapState = ?*const fn (WGPUBuffer) callconv(.C) WGPUBufferMapState;
 pub const WGPUProcBufferGetMappedRange = ?*const fn (WGPUBuffer, usize, usize) callconv(.C) ?*anyopaque;
 pub const WGPUProcBufferGetSize = ?*const fn (WGPUBuffer) callconv(.C) u64;
-pub const WGPUProcBufferGetUsage = ?*const fn (WGPUBuffer) callconv(.C) WGPUBufferUsage;
+pub const WGPUProcBufferGetUsage = ?*const fn (WGPUBuffer) callconv(.C) WGPUBufferUsageFlags;
 pub const WGPUProcBufferMapAsync = ?*const fn (WGPUBuffer, WGPUMapModeFlags, usize, usize, WGPUBufferMapCallback, ?*anyopaque) callconv(.C) void;
 pub const WGPUProcBufferSetLabel = ?*const fn (WGPUBuffer, [*c]const u8) callconv(.C) void;
 pub const WGPUProcBufferUnmap = ?*const fn (WGPUBuffer) callconv(.C) void;
@@ -1361,7 +1389,7 @@ pub const WGPUProcComputePassEncoderEndPipelineStatisticsQuery = ?*const fn (WGP
 pub const WGPUProcComputePassEncoderInsertDebugMarker = ?*const fn (WGPUComputePassEncoder, [*c]const u8) callconv(.C) void;
 pub const WGPUProcComputePassEncoderPopDebugGroup = ?*const fn (WGPUComputePassEncoder) callconv(.C) void;
 pub const WGPUProcComputePassEncoderPushDebugGroup = ?*const fn (WGPUComputePassEncoder, [*c]const u8) callconv(.C) void;
-pub const WGPUProcComputePassEncoderSetBindGroup = ?*const fn (WGPUComputePassEncoder, u32, WGPUBindGroup, u32, [*c]const u32) callconv(.C) void;
+pub const WGPUProcComputePassEncoderSetBindGroup = ?*const fn (WGPUComputePassEncoder, u32, WGPUBindGroup, usize, [*c]const u32) callconv(.C) void;
 pub const WGPUProcComputePassEncoderSetLabel = ?*const fn (WGPUComputePassEncoder, [*c]const u8) callconv(.C) void;
 pub const WGPUProcComputePassEncoderSetPipeline = ?*const fn (WGPUComputePassEncoder, WGPUComputePipeline) callconv(.C) void;
 pub const WGPUProcComputePassEncoderReference = ?*const fn (WGPUComputePassEncoder) callconv(.C) void;
@@ -1383,13 +1411,12 @@ pub const WGPUProcDeviceCreateRenderPipeline = ?*const fn (WGPUDevice, [*c]const
 pub const WGPUProcDeviceCreateRenderPipelineAsync = ?*const fn (WGPUDevice, [*c]const WGPURenderPipelineDescriptor, WGPUCreateRenderPipelineAsyncCallback, ?*anyopaque) callconv(.C) void;
 pub const WGPUProcDeviceCreateSampler = ?*const fn (WGPUDevice, [*c]const WGPUSamplerDescriptor) callconv(.C) WGPUSampler;
 pub const WGPUProcDeviceCreateShaderModule = ?*const fn (WGPUDevice, [*c]const WGPUShaderModuleDescriptor) callconv(.C) WGPUShaderModule;
-pub const WGPUProcDeviceCreateSwapChain = ?*const fn (WGPUDevice, WGPUSurface, [*c]const WGPUSwapChainDescriptor) callconv(.C) WGPUSwapChain;
 pub const WGPUProcDeviceCreateTexture = ?*const fn (WGPUDevice, [*c]const WGPUTextureDescriptor) callconv(.C) WGPUTexture;
 pub const WGPUProcDeviceDestroy = ?*const fn (WGPUDevice) callconv(.C) void;
 pub const WGPUProcDeviceEnumerateFeatures = ?*const fn (WGPUDevice, [*c]WGPUFeatureName) callconv(.C) usize;
-pub const WGPUProcDeviceGetLimits = ?*const fn (WGPUDevice, [*c]WGPUSupportedLimits) callconv(.C) bool;
+pub const WGPUProcDeviceGetLimits = ?*const fn (WGPUDevice, [*c]WGPUSupportedLimits) callconv(.C) WGPUBool;
 pub const WGPUProcDeviceGetQueue = ?*const fn (WGPUDevice) callconv(.C) WGPUQueue;
-pub const WGPUProcDeviceHasFeature = ?*const fn (WGPUDevice, WGPUFeatureName) callconv(.C) bool;
+pub const WGPUProcDeviceHasFeature = ?*const fn (WGPUDevice, WGPUFeatureName) callconv(.C) WGPUBool;
 pub const WGPUProcDevicePopErrorScope = ?*const fn (WGPUDevice, WGPUErrorCallback, ?*anyopaque) callconv(.C) void;
 pub const WGPUProcDevicePushErrorScope = ?*const fn (WGPUDevice, WGPUErrorFilter) callconv(.C) void;
 pub const WGPUProcDeviceSetLabel = ?*const fn (WGPUDevice, [*c]const u8) callconv(.C) void;
@@ -1412,11 +1439,12 @@ pub const WGPUProcQuerySetReference = ?*const fn (WGPUQuerySet) callconv(.C) voi
 pub const WGPUProcQuerySetRelease = ?*const fn (WGPUQuerySet) callconv(.C) void;
 pub const WGPUProcQueueOnSubmittedWorkDone = ?*const fn (WGPUQueue, WGPUQueueWorkDoneCallback, ?*anyopaque) callconv(.C) void;
 pub const WGPUProcQueueSetLabel = ?*const fn (WGPUQueue, [*c]const u8) callconv(.C) void;
-pub const WGPUProcQueueSubmit = ?*const fn (WGPUQueue, u32, [*c]const WGPUCommandBuffer) callconv(.C) void;
+pub const WGPUProcQueueSubmit = ?*const fn (WGPUQueue, usize, [*c]const WGPUCommandBuffer) callconv(.C) void;
 pub const WGPUProcQueueWriteBuffer = ?*const fn (WGPUQueue, WGPUBuffer, u64, ?*const anyopaque, usize) callconv(.C) void;
 pub const WGPUProcQueueWriteTexture = ?*const fn (WGPUQueue, [*c]const WGPUImageCopyTexture, ?*const anyopaque, usize, [*c]const WGPUTextureDataLayout, [*c]const WGPUExtent3D) callconv(.C) void;
 pub const WGPUProcQueueReference = ?*const fn (WGPUQueue) callconv(.C) void;
 pub const WGPUProcQueueRelease = ?*const fn (WGPUQueue) callconv(.C) void;
+pub const WGPUProcRenderBundleSetLabel = ?*const fn (WGPURenderBundle, [*c]const u8) callconv(.C) void;
 pub const WGPUProcRenderBundleReference = ?*const fn (WGPURenderBundle) callconv(.C) void;
 pub const WGPUProcRenderBundleRelease = ?*const fn (WGPURenderBundle) callconv(.C) void;
 pub const WGPUProcRenderBundleEncoderDraw = ?*const fn (WGPURenderBundleEncoder, u32, u32, u32, u32) callconv(.C) void;
@@ -1427,7 +1455,7 @@ pub const WGPUProcRenderBundleEncoderFinish = ?*const fn (WGPURenderBundleEncode
 pub const WGPUProcRenderBundleEncoderInsertDebugMarker = ?*const fn (WGPURenderBundleEncoder, [*c]const u8) callconv(.C) void;
 pub const WGPUProcRenderBundleEncoderPopDebugGroup = ?*const fn (WGPURenderBundleEncoder) callconv(.C) void;
 pub const WGPUProcRenderBundleEncoderPushDebugGroup = ?*const fn (WGPURenderBundleEncoder, [*c]const u8) callconv(.C) void;
-pub const WGPUProcRenderBundleEncoderSetBindGroup = ?*const fn (WGPURenderBundleEncoder, u32, WGPUBindGroup, u32, [*c]const u32) callconv(.C) void;
+pub const WGPUProcRenderBundleEncoderSetBindGroup = ?*const fn (WGPURenderBundleEncoder, u32, WGPUBindGroup, usize, [*c]const u32) callconv(.C) void;
 pub const WGPUProcRenderBundleEncoderSetIndexBuffer = ?*const fn (WGPURenderBundleEncoder, WGPUBuffer, WGPUIndexFormat, u64, u64) callconv(.C) void;
 pub const WGPUProcRenderBundleEncoderSetLabel = ?*const fn (WGPURenderBundleEncoder, [*c]const u8) callconv(.C) void;
 pub const WGPUProcRenderBundleEncoderSetPipeline = ?*const fn (WGPURenderBundleEncoder, WGPURenderPipeline) callconv(.C) void;
@@ -1443,11 +1471,11 @@ pub const WGPUProcRenderPassEncoderDrawIndirect = ?*const fn (WGPURenderPassEnco
 pub const WGPUProcRenderPassEncoderEnd = ?*const fn (WGPURenderPassEncoder) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderEndOcclusionQuery = ?*const fn (WGPURenderPassEncoder) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderEndPipelineStatisticsQuery = ?*const fn (WGPURenderPassEncoder) callconv(.C) void;
-pub const WGPUProcRenderPassEncoderExecuteBundles = ?*const fn (WGPURenderPassEncoder, u32, [*c]const WGPURenderBundle) callconv(.C) void;
+pub const WGPUProcRenderPassEncoderExecuteBundles = ?*const fn (WGPURenderPassEncoder, usize, [*c]const WGPURenderBundle) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderInsertDebugMarker = ?*const fn (WGPURenderPassEncoder, [*c]const u8) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderPopDebugGroup = ?*const fn (WGPURenderPassEncoder) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderPushDebugGroup = ?*const fn (WGPURenderPassEncoder, [*c]const u8) callconv(.C) void;
-pub const WGPUProcRenderPassEncoderSetBindGroup = ?*const fn (WGPURenderPassEncoder, u32, WGPUBindGroup, u32, [*c]const u32) callconv(.C) void;
+pub const WGPUProcRenderPassEncoderSetBindGroup = ?*const fn (WGPURenderPassEncoder, u32, WGPUBindGroup, usize, [*c]const u32) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderSetBlendConstant = ?*const fn (WGPURenderPassEncoder, [*c]const WGPUColor) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderSetIndexBuffer = ?*const fn (WGPURenderPassEncoder, WGPUBuffer, WGPUIndexFormat, u64, u64) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderSetLabel = ?*const fn (WGPURenderPassEncoder, [*c]const u8) callconv(.C) void;
@@ -1469,13 +1497,15 @@ pub const WGPUProcShaderModuleGetCompilationInfo = ?*const fn (WGPUShaderModule,
 pub const WGPUProcShaderModuleSetLabel = ?*const fn (WGPUShaderModule, [*c]const u8) callconv(.C) void;
 pub const WGPUProcShaderModuleReference = ?*const fn (WGPUShaderModule) callconv(.C) void;
 pub const WGPUProcShaderModuleRelease = ?*const fn (WGPUShaderModule) callconv(.C) void;
+pub const WGPUProcSurfaceConfigure = ?*const fn (WGPUSurface, [*c]const WGPUSurfaceConfiguration) callconv(.C) void;
+pub const WGPUProcSurfaceGetCapabilities = ?*const fn (WGPUSurface, WGPUAdapter, [*c]WGPUSurfaceCapabilities) callconv(.C) void;
+pub const WGPUProcSurfaceGetCurrentTexture = ?*const fn (WGPUSurface, [*c]WGPUSurfaceTexture) callconv(.C) void;
 pub const WGPUProcSurfaceGetPreferredFormat = ?*const fn (WGPUSurface, WGPUAdapter) callconv(.C) WGPUTextureFormat;
+pub const WGPUProcSurfacePresent = ?*const fn (WGPUSurface) callconv(.C) void;
+pub const WGPUProcSurfaceUnconfigure = ?*const fn (WGPUSurface) callconv(.C) void;
 pub const WGPUProcSurfaceReference = ?*const fn (WGPUSurface) callconv(.C) void;
 pub const WGPUProcSurfaceRelease = ?*const fn (WGPUSurface) callconv(.C) void;
-pub const WGPUProcSwapChainGetCurrentTextureView = ?*const fn (WGPUSwapChain) callconv(.C) WGPUTextureView;
-pub const WGPUProcSwapChainPresent = ?*const fn (WGPUSwapChain) callconv(.C) void;
-pub const WGPUProcSwapChainReference = ?*const fn (WGPUSwapChain) callconv(.C) void;
-pub const WGPUProcSwapChainRelease = ?*const fn (WGPUSwapChain) callconv(.C) void;
+pub const WGPUProcSurfaceCapabilitiesFreeMembers = ?*const fn (WGPUSurfaceCapabilities) callconv(.C) void;
 pub const WGPUProcTextureCreateView = ?*const fn (WGPUTexture, [*c]const WGPUTextureViewDescriptor) callconv(.C) WGPUTextureView;
 pub const WGPUProcTextureDestroy = ?*const fn (WGPUTexture) callconv(.C) void;
 pub const WGPUProcTextureGetDepthOrArrayLayers = ?*const fn (WGPUTexture) callconv(.C) u32;
@@ -1484,7 +1514,7 @@ pub const WGPUProcTextureGetFormat = ?*const fn (WGPUTexture) callconv(.C) WGPUT
 pub const WGPUProcTextureGetHeight = ?*const fn (WGPUTexture) callconv(.C) u32;
 pub const WGPUProcTextureGetMipLevelCount = ?*const fn (WGPUTexture) callconv(.C) u32;
 pub const WGPUProcTextureGetSampleCount = ?*const fn (WGPUTexture) callconv(.C) u32;
-pub const WGPUProcTextureGetUsage = ?*const fn (WGPUTexture) callconv(.C) WGPUTextureUsage;
+pub const WGPUProcTextureGetUsage = ?*const fn (WGPUTexture) callconv(.C) WGPUTextureUsageFlags;
 pub const WGPUProcTextureGetWidth = ?*const fn (WGPUTexture) callconv(.C) u32;
 pub const WGPUProcTextureSetLabel = ?*const fn (WGPUTexture, [*c]const u8) callconv(.C) void;
 pub const WGPUProcTextureReference = ?*const fn (WGPUTexture) callconv(.C) void;
@@ -1495,9 +1525,9 @@ pub const WGPUProcTextureViewRelease = ?*const fn (WGPUTextureView) callconv(.C)
 pub extern fn wgpuCreateInstance(descriptor: [*c]const WGPUInstanceDescriptor) WGPUInstance;
 pub extern fn wgpuGetProcAddress(device: WGPUDevice, procName: [*c]const u8) WGPUProc;
 pub extern fn wgpuAdapterEnumerateFeatures(adapter: WGPUAdapter, features: [*c]WGPUFeatureName) usize;
-pub extern fn wgpuAdapterGetLimits(adapter: WGPUAdapter, limits: [*c]WGPUSupportedLimits) bool;
+pub extern fn wgpuAdapterGetLimits(adapter: WGPUAdapter, limits: [*c]WGPUSupportedLimits) WGPUBool;
 pub extern fn wgpuAdapterGetProperties(adapter: WGPUAdapter, properties: [*c]WGPUAdapterProperties) void;
-pub extern fn wgpuAdapterHasFeature(adapter: WGPUAdapter, feature: WGPUFeatureName) bool;
+pub extern fn wgpuAdapterHasFeature(adapter: WGPUAdapter, feature: WGPUFeatureName) WGPUBool;
 pub extern fn wgpuAdapterRequestDevice(adapter: WGPUAdapter, descriptor: [*c]const WGPUDeviceDescriptor, callback: WGPURequestDeviceCallback, userdata: ?*anyopaque) void;
 pub extern fn wgpuAdapterReference(adapter: WGPUAdapter) void;
 pub extern fn wgpuAdapterRelease(adapter: WGPUAdapter) void;
@@ -1512,7 +1542,7 @@ pub extern fn wgpuBufferGetConstMappedRange(buffer: WGPUBuffer, offset: usize, s
 pub extern fn wgpuBufferGetMapState(buffer: WGPUBuffer) WGPUBufferMapState;
 pub extern fn wgpuBufferGetMappedRange(buffer: WGPUBuffer, offset: usize, size: usize) ?*anyopaque;
 pub extern fn wgpuBufferGetSize(buffer: WGPUBuffer) u64;
-pub extern fn wgpuBufferGetUsage(buffer: WGPUBuffer) WGPUBufferUsage;
+pub extern fn wgpuBufferGetUsage(buffer: WGPUBuffer) WGPUBufferUsageFlags;
 pub extern fn wgpuBufferMapAsync(buffer: WGPUBuffer, mode: WGPUMapModeFlags, offset: usize, size: usize, callback: WGPUBufferMapCallback, userdata: ?*anyopaque) void;
 pub extern fn wgpuBufferSetLabel(buffer: WGPUBuffer, label: [*c]const u8) void;
 pub extern fn wgpuBufferUnmap(buffer: WGPUBuffer) void;
@@ -1545,7 +1575,7 @@ pub extern fn wgpuComputePassEncoderEndPipelineStatisticsQuery(computePassEncode
 pub extern fn wgpuComputePassEncoderInsertDebugMarker(computePassEncoder: WGPUComputePassEncoder, markerLabel: [*c]const u8) void;
 pub extern fn wgpuComputePassEncoderPopDebugGroup(computePassEncoder: WGPUComputePassEncoder) void;
 pub extern fn wgpuComputePassEncoderPushDebugGroup(computePassEncoder: WGPUComputePassEncoder, groupLabel: [*c]const u8) void;
-pub extern fn wgpuComputePassEncoderSetBindGroup(computePassEncoder: WGPUComputePassEncoder, groupIndex: u32, group: WGPUBindGroup, dynamicOffsetCount: u32, dynamicOffsets: [*c]const u32) void;
+pub extern fn wgpuComputePassEncoderSetBindGroup(computePassEncoder: WGPUComputePassEncoder, groupIndex: u32, group: WGPUBindGroup, dynamicOffsetCount: usize, dynamicOffsets: [*c]const u32) void;
 pub extern fn wgpuComputePassEncoderSetLabel(computePassEncoder: WGPUComputePassEncoder, label: [*c]const u8) void;
 pub extern fn wgpuComputePassEncoderSetPipeline(computePassEncoder: WGPUComputePassEncoder, pipeline: WGPUComputePipeline) void;
 pub extern fn wgpuComputePassEncoderReference(computePassEncoder: WGPUComputePassEncoder) void;
@@ -1567,13 +1597,12 @@ pub extern fn wgpuDeviceCreateRenderPipeline(device: WGPUDevice, descriptor: [*c
 pub extern fn wgpuDeviceCreateRenderPipelineAsync(device: WGPUDevice, descriptor: [*c]const WGPURenderPipelineDescriptor, callback: WGPUCreateRenderPipelineAsyncCallback, userdata: ?*anyopaque) void;
 pub extern fn wgpuDeviceCreateSampler(device: WGPUDevice, descriptor: [*c]const WGPUSamplerDescriptor) WGPUSampler;
 pub extern fn wgpuDeviceCreateShaderModule(device: WGPUDevice, descriptor: [*c]const WGPUShaderModuleDescriptor) WGPUShaderModule;
-pub extern fn wgpuDeviceCreateSwapChain(device: WGPUDevice, surface: WGPUSurface, descriptor: [*c]const WGPUSwapChainDescriptor) WGPUSwapChain;
 pub extern fn wgpuDeviceCreateTexture(device: WGPUDevice, descriptor: [*c]const WGPUTextureDescriptor) WGPUTexture;
 pub extern fn wgpuDeviceDestroy(device: WGPUDevice) void;
 pub extern fn wgpuDeviceEnumerateFeatures(device: WGPUDevice, features: [*c]WGPUFeatureName) usize;
-pub extern fn wgpuDeviceGetLimits(device: WGPUDevice, limits: [*c]WGPUSupportedLimits) bool;
+pub extern fn wgpuDeviceGetLimits(device: WGPUDevice, limits: [*c]WGPUSupportedLimits) WGPUBool;
 pub extern fn wgpuDeviceGetQueue(device: WGPUDevice) WGPUQueue;
-pub extern fn wgpuDeviceHasFeature(device: WGPUDevice, feature: WGPUFeatureName) bool;
+pub extern fn wgpuDeviceHasFeature(device: WGPUDevice, feature: WGPUFeatureName) WGPUBool;
 pub extern fn wgpuDevicePopErrorScope(device: WGPUDevice, callback: WGPUErrorCallback, userdata: ?*anyopaque) void;
 pub extern fn wgpuDevicePushErrorScope(device: WGPUDevice, filter: WGPUErrorFilter) void;
 pub extern fn wgpuDeviceSetLabel(device: WGPUDevice, label: [*c]const u8) void;
@@ -1596,11 +1625,12 @@ pub extern fn wgpuQuerySetReference(querySet: WGPUQuerySet) void;
 pub extern fn wgpuQuerySetRelease(querySet: WGPUQuerySet) void;
 pub extern fn wgpuQueueOnSubmittedWorkDone(queue: WGPUQueue, callback: WGPUQueueWorkDoneCallback, userdata: ?*anyopaque) void;
 pub extern fn wgpuQueueSetLabel(queue: WGPUQueue, label: [*c]const u8) void;
-pub extern fn wgpuQueueSubmit(queue: WGPUQueue, commandCount: u32, commands: [*c]const WGPUCommandBuffer) void;
+pub extern fn wgpuQueueSubmit(queue: WGPUQueue, commandCount: usize, commands: [*c]const WGPUCommandBuffer) void;
 pub extern fn wgpuQueueWriteBuffer(queue: WGPUQueue, buffer: WGPUBuffer, bufferOffset: u64, data: ?*const anyopaque, size: usize) void;
 pub extern fn wgpuQueueWriteTexture(queue: WGPUQueue, destination: [*c]const WGPUImageCopyTexture, data: ?*const anyopaque, dataSize: usize, dataLayout: [*c]const WGPUTextureDataLayout, writeSize: [*c]const WGPUExtent3D) void;
 pub extern fn wgpuQueueReference(queue: WGPUQueue) void;
 pub extern fn wgpuQueueRelease(queue: WGPUQueue) void;
+pub extern fn wgpuRenderBundleSetLabel(renderBundle: WGPURenderBundle, label: [*c]const u8) void;
 pub extern fn wgpuRenderBundleReference(renderBundle: WGPURenderBundle) void;
 pub extern fn wgpuRenderBundleRelease(renderBundle: WGPURenderBundle) void;
 pub extern fn wgpuRenderBundleEncoderDraw(renderBundleEncoder: WGPURenderBundleEncoder, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32) void;
@@ -1611,7 +1641,7 @@ pub extern fn wgpuRenderBundleEncoderFinish(renderBundleEncoder: WGPURenderBundl
 pub extern fn wgpuRenderBundleEncoderInsertDebugMarker(renderBundleEncoder: WGPURenderBundleEncoder, markerLabel: [*c]const u8) void;
 pub extern fn wgpuRenderBundleEncoderPopDebugGroup(renderBundleEncoder: WGPURenderBundleEncoder) void;
 pub extern fn wgpuRenderBundleEncoderPushDebugGroup(renderBundleEncoder: WGPURenderBundleEncoder, groupLabel: [*c]const u8) void;
-pub extern fn wgpuRenderBundleEncoderSetBindGroup(renderBundleEncoder: WGPURenderBundleEncoder, groupIndex: u32, group: WGPUBindGroup, dynamicOffsetCount: u32, dynamicOffsets: [*c]const u32) void;
+pub extern fn wgpuRenderBundleEncoderSetBindGroup(renderBundleEncoder: WGPURenderBundleEncoder, groupIndex: u32, group: WGPUBindGroup, dynamicOffsetCount: usize, dynamicOffsets: [*c]const u32) void;
 pub extern fn wgpuRenderBundleEncoderSetIndexBuffer(renderBundleEncoder: WGPURenderBundleEncoder, buffer: WGPUBuffer, format: WGPUIndexFormat, offset: u64, size: u64) void;
 pub extern fn wgpuRenderBundleEncoderSetLabel(renderBundleEncoder: WGPURenderBundleEncoder, label: [*c]const u8) void;
 pub extern fn wgpuRenderBundleEncoderSetPipeline(renderBundleEncoder: WGPURenderBundleEncoder, pipeline: WGPURenderPipeline) void;
@@ -1627,11 +1657,11 @@ pub extern fn wgpuRenderPassEncoderDrawIndirect(renderPassEncoder: WGPURenderPas
 pub extern fn wgpuRenderPassEncoderEnd(renderPassEncoder: WGPURenderPassEncoder) void;
 pub extern fn wgpuRenderPassEncoderEndOcclusionQuery(renderPassEncoder: WGPURenderPassEncoder) void;
 pub extern fn wgpuRenderPassEncoderEndPipelineStatisticsQuery(renderPassEncoder: WGPURenderPassEncoder) void;
-pub extern fn wgpuRenderPassEncoderExecuteBundles(renderPassEncoder: WGPURenderPassEncoder, bundleCount: u32, bundles: [*c]const WGPURenderBundle) void;
+pub extern fn wgpuRenderPassEncoderExecuteBundles(renderPassEncoder: WGPURenderPassEncoder, bundleCount: usize, bundles: [*c]const WGPURenderBundle) void;
 pub extern fn wgpuRenderPassEncoderInsertDebugMarker(renderPassEncoder: WGPURenderPassEncoder, markerLabel: [*c]const u8) void;
 pub extern fn wgpuRenderPassEncoderPopDebugGroup(renderPassEncoder: WGPURenderPassEncoder) void;
 pub extern fn wgpuRenderPassEncoderPushDebugGroup(renderPassEncoder: WGPURenderPassEncoder, groupLabel: [*c]const u8) void;
-pub extern fn wgpuRenderPassEncoderSetBindGroup(renderPassEncoder: WGPURenderPassEncoder, groupIndex: u32, group: WGPUBindGroup, dynamicOffsetCount: u32, dynamicOffsets: [*c]const u32) void;
+pub extern fn wgpuRenderPassEncoderSetBindGroup(renderPassEncoder: WGPURenderPassEncoder, groupIndex: u32, group: WGPUBindGroup, dynamicOffsetCount: usize, dynamicOffsets: [*c]const u32) void;
 pub extern fn wgpuRenderPassEncoderSetBlendConstant(renderPassEncoder: WGPURenderPassEncoder, color: [*c]const WGPUColor) void;
 pub extern fn wgpuRenderPassEncoderSetIndexBuffer(renderPassEncoder: WGPURenderPassEncoder, buffer: WGPUBuffer, format: WGPUIndexFormat, offset: u64, size: u64) void;
 pub extern fn wgpuRenderPassEncoderSetLabel(renderPassEncoder: WGPURenderPassEncoder, label: [*c]const u8) void;
@@ -1653,13 +1683,15 @@ pub extern fn wgpuShaderModuleGetCompilationInfo(shaderModule: WGPUShaderModule,
 pub extern fn wgpuShaderModuleSetLabel(shaderModule: WGPUShaderModule, label: [*c]const u8) void;
 pub extern fn wgpuShaderModuleReference(shaderModule: WGPUShaderModule) void;
 pub extern fn wgpuShaderModuleRelease(shaderModule: WGPUShaderModule) void;
+pub extern fn wgpuSurfaceConfigure(surface: WGPUSurface, config: [*c]const WGPUSurfaceConfiguration) void;
+pub extern fn wgpuSurfaceGetCapabilities(surface: WGPUSurface, adapter: WGPUAdapter, capabilities: [*c]WGPUSurfaceCapabilities) void;
+pub extern fn wgpuSurfaceGetCurrentTexture(surface: WGPUSurface, surfaceTexture: [*c]WGPUSurfaceTexture) void;
 pub extern fn wgpuSurfaceGetPreferredFormat(surface: WGPUSurface, adapter: WGPUAdapter) WGPUTextureFormat;
+pub extern fn wgpuSurfacePresent(surface: WGPUSurface) void;
+pub extern fn wgpuSurfaceUnconfigure(surface: WGPUSurface) void;
 pub extern fn wgpuSurfaceReference(surface: WGPUSurface) void;
 pub extern fn wgpuSurfaceRelease(surface: WGPUSurface) void;
-pub extern fn wgpuSwapChainGetCurrentTextureView(swapChain: WGPUSwapChain) WGPUTextureView;
-pub extern fn wgpuSwapChainPresent(swapChain: WGPUSwapChain) void;
-pub extern fn wgpuSwapChainReference(swapChain: WGPUSwapChain) void;
-pub extern fn wgpuSwapChainRelease(swapChain: WGPUSwapChain) void;
+pub extern fn wgpuSurfaceCapabilitiesFreeMembers(capabilities: WGPUSurfaceCapabilities) void;
 pub extern fn wgpuTextureCreateView(texture: WGPUTexture, descriptor: [*c]const WGPUTextureViewDescriptor) WGPUTextureView;
 pub extern fn wgpuTextureDestroy(texture: WGPUTexture) void;
 pub extern fn wgpuTextureGetDepthOrArrayLayers(texture: WGPUTexture) u32;
@@ -1668,7 +1700,7 @@ pub extern fn wgpuTextureGetFormat(texture: WGPUTexture) WGPUTextureFormat;
 pub extern fn wgpuTextureGetHeight(texture: WGPUTexture) u32;
 pub extern fn wgpuTextureGetMipLevelCount(texture: WGPUTexture) u32;
 pub extern fn wgpuTextureGetSampleCount(texture: WGPUTexture) u32;
-pub extern fn wgpuTextureGetUsage(texture: WGPUTexture) WGPUTextureUsage;
+pub extern fn wgpuTextureGetUsage(texture: WGPUTexture) WGPUTextureUsageFlags;
 pub extern fn wgpuTextureGetWidth(texture: WGPUTexture) u32;
 pub extern fn wgpuTextureSetLabel(texture: WGPUTexture, label: [*c]const u8) void;
 pub extern fn wgpuTextureReference(texture: WGPUTexture) void;
@@ -1676,22 +1708,24 @@ pub extern fn wgpuTextureRelease(texture: WGPUTexture) void;
 pub extern fn wgpuTextureViewSetLabel(textureView: WGPUTextureView, label: [*c]const u8) void;
 pub extern fn wgpuTextureViewReference(textureView: WGPUTextureView) void;
 pub extern fn wgpuTextureViewRelease(textureView: WGPUTextureView) void;
-pub const WGPUSType_DeviceExtras: c_int = 1610612737;
-pub const WGPUSType_AdapterExtras: c_int = 1610612738;
-pub const WGPUSType_RequiredLimitsExtras: c_int = 1610612739;
-pub const WGPUSType_PipelineLayoutExtras: c_int = 1610612740;
-pub const WGPUSType_ShaderModuleGLSLDescriptor: c_int = 1610612741;
-pub const WGPUSType_SupportedLimitsExtras: c_int = 1610612739;
-pub const WGPUSType_InstanceExtras: c_int = 1610612742;
-pub const WGPUSType_SwapChainDescriptorExtras: c_int = 1610612743;
+pub const WGPUSType_DeviceExtras: c_int = 196609;
+pub const WGPUSType_RequiredLimitsExtras: c_int = 196610;
+pub const WGPUSType_PipelineLayoutExtras: c_int = 196611;
+pub const WGPUSType_ShaderModuleGLSLDescriptor: c_int = 196612;
+pub const WGPUSType_SupportedLimitsExtras: c_int = 196613;
+pub const WGPUSType_InstanceExtras: c_int = 196614;
+pub const WGPUSType_BindGroupEntryExtras: c_int = 196615;
+pub const WGPUSType_BindGroupLayoutEntryExtras: c_int = 196616;
 pub const WGPUNativeSType_Force32: c_int = 2147483647;
 pub const enum_WGPUNativeSType = c_uint;
 pub const WGPUNativeSType = enum_WGPUNativeSType;
-pub const WGPUNativeFeature_PushConstants: c_int = 1610612737;
-pub const WGPUNativeFeature_TextureAdapterSpecificFormatFeatures: c_int = 1610612738;
-pub const WGPUNativeFeature_MultiDrawIndirect: c_int = 1610612739;
-pub const WGPUNativeFeature_MultiDrawIndirectCount: c_int = 1610612740;
-pub const WGPUNativeFeature_VertexWritableStorage: c_int = 1610612741;
+pub const WGPUNativeFeature_PushConstants: c_int = 196609;
+pub const WGPUNativeFeature_TextureAdapterSpecificFormatFeatures: c_int = 196610;
+pub const WGPUNativeFeature_MultiDrawIndirect: c_int = 196611;
+pub const WGPUNativeFeature_MultiDrawIndirectCount: c_int = 196612;
+pub const WGPUNativeFeature_VertexWritableStorage: c_int = 196613;
+pub const WGPUNativeFeature_TextureBindingArray: c_int = 196614;
+pub const WGPUNativeFeature_SampledTextureAndStorageBufferArrayNonUniformIndexing: c_int = 196615;
 pub const WGPUNativeFeature_Force32: c_int = 2147483647;
 pub const enum_WGPUNativeFeature = c_uint;
 pub const WGPUNativeFeature = enum_WGPUNativeFeature;
@@ -1704,59 +1738,68 @@ pub const WGPULogLevel_Trace: c_int = 5;
 pub const WGPULogLevel_Force32: c_int = 2147483647;
 pub const enum_WGPULogLevel = c_uint;
 pub const WGPULogLevel = enum_WGPULogLevel;
-pub const WGPUInstanceBackend_Vulkan: c_int = 2;
-pub const WGPUInstanceBackend_GL: c_int = 32;
+pub const WGPUInstanceBackend_All: c_int = 0;
+pub const WGPUInstanceBackend_Vulkan: c_int = 1;
+pub const WGPUInstanceBackend_GL: c_int = 2;
 pub const WGPUInstanceBackend_Metal: c_int = 4;
 pub const WGPUInstanceBackend_DX12: c_int = 8;
 pub const WGPUInstanceBackend_DX11: c_int = 16;
-pub const WGPUInstanceBackend_BrowserWebGPU: c_int = 64;
-pub const WGPUInstanceBackend_Primary: c_int = 78;
-pub const WGPUInstanceBackend_Secondary: c_int = 48;
-pub const WGPUInstanceBackend_None: c_int = 0;
+pub const WGPUInstanceBackend_BrowserWebGPU: c_int = 32;
+pub const WGPUInstanceBackend_Primary: c_int = 45;
+pub const WGPUInstanceBackend_Secondary: c_int = 18;
 pub const WGPUInstanceBackend_Force32: c_int = 2147483647;
 pub const enum_WGPUInstanceBackend = c_uint;
 pub const WGPUInstanceBackend = enum_WGPUInstanceBackend;
 pub const WGPUInstanceBackendFlags = WGPUFlags;
+pub const WGPUInstanceFlag_Default: c_int = 0;
+pub const WGPUInstanceFlag_Debug: c_int = 1;
+pub const WGPUInstanceFlag_Validation: c_int = 2;
+pub const WGPUInstanceFlag_DiscardHalLabels: c_int = 4;
+pub const WGPUInstanceFlag_Force32: c_int = 2147483647;
+pub const enum_WGPUInstanceFlag = c_uint;
+pub const WGPUInstanceFlag = enum_WGPUInstanceFlag;
+pub const WGPUInstanceFlags = WGPUFlags;
 pub const WGPUDx12Compiler_Undefined: c_int = 0;
 pub const WGPUDx12Compiler_Fxc: c_int = 1;
 pub const WGPUDx12Compiler_Dxc: c_int = 2;
 pub const WGPUDx12Compiler_Force32: c_int = 2147483647;
 pub const enum_WGPUDx12Compiler = c_uint;
 pub const WGPUDx12Compiler = enum_WGPUDx12Compiler;
-pub const WGPUCompositeAlphaMode_Auto: c_int = 0;
-pub const WGPUCompositeAlphaMode_Opaque: c_int = 1;
-pub const WGPUCompositeAlphaMode_PreMultiplied: c_int = 2;
-pub const WGPUCompositeAlphaMode_PostMultiplied: c_int = 3;
-pub const WGPUCompositeAlphaMode_Inherit: c_int = 4;
-pub const WGPUCompositeAlphaMode_Force32: c_int = 2147483647;
-pub const enum_WGPUCompositeAlphaMode = c_uint;
-pub const WGPUCompositeAlphaMode = enum_WGPUCompositeAlphaMode;
+pub const WGPUGles3MinorVersion_Automatic: c_int = 0;
+pub const WGPUGles3MinorVersion_Version0: c_int = 1;
+pub const WGPUGles3MinorVersion_Version1: c_int = 2;
+pub const WGPUGles3MinorVersion_Version2: c_int = 3;
+pub const WGPUGles3MinorVersion_Force32: c_int = 2147483647;
+pub const enum_WGPUGles3MinorVersion = c_uint;
+pub const WGPUGles3MinorVersion = enum_WGPUGles3MinorVersion;
 pub const struct_WGPUInstanceExtras = extern struct {
     chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
     backends: WGPUInstanceBackendFlags = @import("std").mem.zeroes(WGPUInstanceBackendFlags),
+    flags: WGPUInstanceFlags = @import("std").mem.zeroes(WGPUInstanceFlags),
     dx12ShaderCompiler: WGPUDx12Compiler = @import("std").mem.zeroes(WGPUDx12Compiler),
+    gles3MinorVersion: WGPUGles3MinorVersion = @import("std").mem.zeroes(WGPUGles3MinorVersion),
     dxilPath: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
     dxcPath: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const WGPUInstanceExtras = struct_WGPUInstanceExtras;
-pub const struct_WGPUAdapterExtras = extern struct {
-    chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
-    backend: WGPUBackendType = @import("std").mem.zeroes(WGPUBackendType),
-};
-pub const WGPUAdapterExtras = struct_WGPUAdapterExtras;
 pub const struct_WGPUDeviceExtras = extern struct {
     chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
     tracePath: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const WGPUDeviceExtras = struct_WGPUDeviceExtras;
+pub const struct_WGPUNativeLimits = extern struct {
+    maxPushConstantSize: u32 = @import("std").mem.zeroes(u32),
+    maxNonSamplerBindings: u32 = @import("std").mem.zeroes(u32),
+};
+pub const WGPUNativeLimits = struct_WGPUNativeLimits;
 pub const struct_WGPURequiredLimitsExtras = extern struct {
     chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
-    maxPushConstantSize: u32 = @import("std").mem.zeroes(u32),
+    limits: WGPUNativeLimits = @import("std").mem.zeroes(WGPUNativeLimits),
 };
 pub const WGPURequiredLimitsExtras = struct_WGPURequiredLimitsExtras;
 pub const struct_WGPUSupportedLimitsExtras = extern struct {
     chain: WGPUChainedStructOut = @import("std").mem.zeroes(WGPUChainedStructOut),
-    maxPushConstantSize: u32 = @import("std").mem.zeroes(u32),
+    limits: WGPUNativeLimits = @import("std").mem.zeroes(WGPUNativeLimits),
 };
 pub const WGPUSupportedLimitsExtras = struct_WGPUSupportedLimitsExtras;
 pub const struct_WGPUPushConstantRange = extern struct {
@@ -1825,36 +1868,34 @@ pub const struct_WGPUGlobalReport = extern struct {
     gl: WGPUHubReport = @import("std").mem.zeroes(WGPUHubReport),
 };
 pub const WGPUGlobalReport = struct_WGPUGlobalReport;
-pub const struct_WGPUSurfaceCapabilities = extern struct {
-    formatCount: usize = @import("std").mem.zeroes(usize),
-    formats: [*c]WGPUTextureFormat = @import("std").mem.zeroes([*c]WGPUTextureFormat),
-    presentModeCount: usize = @import("std").mem.zeroes(usize),
-    presentModes: [*c]WGPUPresentMode = @import("std").mem.zeroes([*c]WGPUPresentMode),
-    alphaModeCount: usize = @import("std").mem.zeroes(usize),
-    alphaModes: [*c]WGPUCompositeAlphaMode = @import("std").mem.zeroes([*c]WGPUCompositeAlphaMode),
-};
-pub const WGPUSurfaceCapabilities = struct_WGPUSurfaceCapabilities;
-pub const struct_WGPUSwapChainDescriptorExtras = extern struct {
-    chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
-    alphaMode: WGPUCompositeAlphaMode = @import("std").mem.zeroes(WGPUCompositeAlphaMode),
-    viewFormatCount: usize = @import("std").mem.zeroes(usize),
-    viewFormats: [*c]const WGPUTextureFormat = @import("std").mem.zeroes([*c]const WGPUTextureFormat),
-};
-pub const WGPUSwapChainDescriptorExtras = struct_WGPUSwapChainDescriptorExtras;
 pub const struct_WGPUInstanceEnumerateAdapterOptions = extern struct {
-    chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
+    nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     backends: WGPUInstanceBackendFlags = @import("std").mem.zeroes(WGPUInstanceBackendFlags),
 };
 pub const WGPUInstanceEnumerateAdapterOptions = struct_WGPUInstanceEnumerateAdapterOptions;
+pub const struct_WGPUBindGroupEntryExtras = extern struct {
+    chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
+    buffers: [*c]const WGPUBuffer = @import("std").mem.zeroes([*c]const WGPUBuffer),
+    bufferCount: usize = @import("std").mem.zeroes(usize),
+    samplers: [*c]const WGPUSampler = @import("std").mem.zeroes([*c]const WGPUSampler),
+    samplerCount: usize = @import("std").mem.zeroes(usize),
+    textureViews: [*c]const WGPUTextureView = @import("std").mem.zeroes([*c]const WGPUTextureView),
+    textureViewCount: usize = @import("std").mem.zeroes(usize),
+};
+pub const WGPUBindGroupEntryExtras = struct_WGPUBindGroupEntryExtras;
+pub const struct_WGPUBindGroupLayoutEntryExtras = extern struct {
+    chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
+    count: u32 = @import("std").mem.zeroes(u32),
+};
+pub const WGPUBindGroupLayoutEntryExtras = struct_WGPUBindGroupLayoutEntryExtras;
 pub const WGPULogCallback = ?*const fn (WGPULogLevel, [*c]const u8, ?*anyopaque) callconv(.C) void;
 pub extern fn wgpuGenerateReport(instance: WGPUInstance, report: [*c]WGPUGlobalReport) void;
 pub extern fn wgpuInstanceEnumerateAdapters(instance: WGPUInstance, options: [*c]const WGPUInstanceEnumerateAdapterOptions, adapters: [*c]WGPUAdapter) usize;
-pub extern fn wgpuQueueSubmitForIndex(queue: WGPUQueue, commandCount: u32, commands: [*c]const WGPUCommandBuffer) WGPUSubmissionIndex;
-pub extern fn wgpuDevicePoll(device: WGPUDevice, wait: bool, wrappedSubmissionIndex: [*c]const WGPUWrappedSubmissionIndex) bool;
+pub extern fn wgpuQueueSubmitForIndex(queue: WGPUQueue, commandCount: usize, commands: [*c]const WGPUCommandBuffer) WGPUSubmissionIndex;
+pub extern fn wgpuDevicePoll(device: WGPUDevice, wait: WGPUBool, wrappedSubmissionIndex: [*c]const WGPUWrappedSubmissionIndex) WGPUBool;
 pub extern fn wgpuSetLogCallback(callback: WGPULogCallback, userdata: ?*anyopaque) void;
 pub extern fn wgpuSetLogLevel(level: WGPULogLevel) void;
 pub extern fn wgpuGetVersion() u32;
-pub extern fn wgpuSurfaceGetCapabilities(surface: WGPUSurface, adapter: WGPUAdapter, capabilities: [*c]WGPUSurfaceCapabilities) void;
 pub extern fn wgpuRenderPassEncoderSetPushConstants(encoder: WGPURenderPassEncoder, stages: WGPUShaderStageFlags, offset: u32, sizeBytes: u32, data: ?*anyopaque) void;
 pub extern fn wgpuRenderPassEncoderMultiDrawIndirect(encoder: WGPURenderPassEncoder, buffer: WGPUBuffer, offset: u64, count: u32) void;
 pub extern fn wgpuRenderPassEncoderMultiDrawIndexedIndirect(encoder: WGPURenderPassEncoder, buffer: WGPUBuffer, offset: u64, count: u32) void;
@@ -2793,16 +2834,12 @@ pub const _RSIZE_T = "";
 pub const _WCHAR_T = "";
 pub const NULL = @import("std").zig.c_translation.cast(?*anyopaque, @as(c_int, 0));
 pub const __CLANG_MAX_ALIGN_T_DEFINED = "";
-pub const __STDBOOL_H = "";
-pub const __bool_true_false_are_defined = @as(c_int, 1);
-pub const @"bool" = bool;
-pub const @"true" = @as(c_int, 1);
-pub const @"false" = @as(c_int, 0);
 pub const WGPU_ARRAY_LAYER_COUNT_UNDEFINED = @as(c_ulong, 0xffffffff);
 pub const WGPU_COPY_STRIDE_UNDEFINED = @as(c_ulong, 0xffffffff);
 pub const WGPU_LIMIT_U32_UNDEFINED = @as(c_ulong, 0xffffffff);
 pub const WGPU_LIMIT_U64_UNDEFINED = @as(c_ulonglong, 0xffffffffffffffff);
 pub const WGPU_MIP_LEVEL_COUNT_UNDEFINED = @as(c_ulong, 0xffffffff);
+pub const WGPU_QUERY_SET_INDEX_UNDEFINED = @as(c_ulong, 0xffffffff);
 pub const WGPU_WHOLE_MAP_SIZE = SIZE_MAX;
 pub const WGPU_WHOLE_SIZE = @as(c_ulonglong, 0xffffffffffffffff);
 pub const __darwin_pthread_handler_rec = struct___darwin_pthread_handler_rec;
@@ -2835,6 +2872,5 @@ pub const WGPURenderPipelineImpl = struct_WGPURenderPipelineImpl;
 pub const WGPUSamplerImpl = struct_WGPUSamplerImpl;
 pub const WGPUShaderModuleImpl = struct_WGPUShaderModuleImpl;
 pub const WGPUSurfaceImpl = struct_WGPUSurfaceImpl;
-pub const WGPUSwapChainImpl = struct_WGPUSwapChainImpl;
 pub const WGPUTextureImpl = struct_WGPUTextureImpl;
 pub const WGPUTextureViewImpl = struct_WGPUTextureViewImpl;

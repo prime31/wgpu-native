@@ -7,7 +7,7 @@
 # python3 generate.py -u ../../ffi/webgpu-headers/webgpu.h -u ../../ffi/wgpu.h -t webgpu.template.zig -o output/webgpu.zig -d defaults.txt -d extra-defaults.txt
 
 # translate-c
-# zig translate-c wgpu-native/wgpu.h > wgpu-native/wgpu.zig
+# zig translate-c ../../ffi/wgpu.h > output/wgpu.zig
 
 # This file is part of the "Learn WebGPU for C++" book.
 #   https://github.com/eliemichel/LearnWebGPU
@@ -37,11 +37,13 @@
 #   (see https://github.com/pplux/wgpu.hpp )
 
 import argparse
+import os
 import re
 from dataclasses import dataclass, field
 from collections import defaultdict
 from os.path import dirname, isfile, join
 import logging
+import subprocess
 
 parser = argparse.ArgumentParser(description="""
 Generate the webgpu-cpp binding from official webgpu-native headers.
@@ -95,6 +97,9 @@ parser.add_argument("--use-non-member-procedures", action='store_true',
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 def main(args):
+    # TODO: we need to run through the method params and convert from WGPU* types to the zig versions
+    zig_wgpu_procs = parse_translate_c_output()
+
     applyDefaultArgs(args)
     template, meta = loadTemplate(args.template)
     api = WebGpuApi()
@@ -106,15 +111,29 @@ def main(args):
     if args.pplux:
         binding = producePpluxBinding(api)
     else:
-        binding = produceBinding(api, meta)
-    
+        binding = produceBinding(api, meta, zig_wgpu_procs)
+
     generateOutput(args.output, template, binding)
+    os.popen('zig fmt output').read()
 
 def applyDefaultArgs(args):
     if not args.header_url:
         args.header_url = [DEFAULT_HEADER_URL]
     if not args.defaults:
         args.defaults = ["defaults.txt", "extra-defaults.txt"]
+
+def parse_translate_c_output():
+    fn_re = re.compile(r"pub extern fn (.*?)\(")
+    dict = {}
+
+    it = iter(os.popen('zig translate-c ../../ffi/wgpu.h').read().splitlines())
+    while (x := next(it, None)) is not None:
+        if not x.startswith("pub extern fn wgpu"):
+            continue
+        if (match := fn_re.search(x)):
+            dict[match.group(1)] = x[3:]
+    return dict
+
 
 # -----------------------------------------------------------------------------
 # Parser, for analyzing webgpu.h
@@ -163,6 +182,7 @@ class EnumerationEntryApi:
 class EnumerationApi:
     name: str
     entries: list[EnumerationEntryApi] = field(default_factory=list)
+    flag: bool = False
 
 @dataclass
 class CallbackApi:
@@ -185,20 +205,42 @@ class WebGpuApi:
     type_aliases: list[TypeAliasApi] = field(default_factory=list)
     stypes: dict[str,str] = field(default_factory=dict) # Name => SType::Name
 
+class Peekable(object):
+    """An iterable class which can return the next element of the wrapped
+    iterator without advancing it."""
+
+    def __init__(self, iterator):
+        self.head = None
+        self.iterator = iterator
+        self.peeked = False
+
+    def peek(self):
+        if not self.peeked:
+            self.peeked = True
+            self.head = next(self.iterator)
+            return self.head
+
+    def __next__(self):
+        if self.peeked:
+            self.peeked = False
+            return self.head
+        else:
+            return next(self.iterator)
+
 def parseHeader(api, header):
     """
     Add fields to api while reading a header file
     """
-    it = iter([
+    it = Peekable(iter([
         line
             .replace("WGPU_OBJECT_ATTRIBUTE", "")
-            .replace("WGPU_ENUM_ATTRIBUTE", "")
+            # .replace("WGPU_ENUM_ATTRIBUTE", "")
             .replace("WGPU_STRUCTURE_ATTRIBUTE", "")
             .replace("WGPU_FUNCTION_ATTRIBUTE", "")
             #.replace("WGPU_NULLABLE", "")
         for line in header.split("\n")
-    ])
-    
+    ]))
+
     struct_re = re.compile(r"struct *WGPU(\w+) *{")
     handle_re = re.compile(r"typedef struct .*WGPU([^_]\w+)\s*;")
     typedef_re = re.compile(r"typedef (\w+) WGPU(\w+)\s*;")
@@ -229,19 +271,25 @@ def parseHeader(api, header):
             return_type = match.group(1)
             if return_type.startswith("WGPU_EXPORT"):
                 return_type = return_type[len("WGPU_EXPORT"):]
-            return_type = c_type_to_zig_type(return_type.strip())
+            return_type = c_type_to_zig_type(return_type.strip(), False, None, None)
             api.procedures.append(ProcedureApi(
                 name=match.group(2),
                 return_type=return_type,
-                arguments=parseProcArgs(match.group(3)),
+                arguments=parseProcArgs(match.group(3), match.group(2)),
             ))
             continue
 
         if (match := enum_re.search(x)):
             name = match.group(1)
+            if "WGPU" + name == "WGPUInstanceBackend":
+                logging.info(f"Skipping enum WGPU{name} (blacklisted)...")
+                parseEnum(name, it, api.stypes)
+                continue
+
             api.enumerations.append(parseEnum(name, it, api.stypes))
             continue
 
+        # MIKE: this technically shouldnt ever get hit since its handled when enums are handled
         if (match := flag_enum_re.search(x)):
             api.enumerations.append(EnumerationApi(
                 name=match.group(1) + "Flags",
@@ -251,7 +299,7 @@ def parseHeader(api, header):
         if (match := callback_re.search(x)):
             api.callbacks.append(CallbackApi(
                 name=match.group(1),
-                arguments=parseProcArgs(match.group(2)),
+                arguments=parseProcArgs(match.group(2),  match.group(1)),
                 raw_arguments=match.group(2),
             ))
             continue
@@ -277,7 +325,16 @@ def parseEnum(name, it, stypes):
     while (x := next(it, None)) is not None:
         if (match := entry_re.search(x)):
             key = match.group(1)
+            # get rid of WGPU*_None and WGPU*_Force32 for most enums
+            if key == "Force32":
+                continue
+            if key == "None" and name != "CullMode":
+                continue
+
             value = match.group(2)
+            if value.startswith('0x'):
+                value = int(value, 0)
+
             api.entries.append(EnumerationEntryApi(key, value))
 
             if "WGPUSType_" in x:
@@ -286,6 +343,11 @@ def parseEnum(name, it, stypes):
 
         elif (match := end_re.search(x)):
             break
+
+    flag_enum_re = re.compile(r"typedef WGPUFlags WGPU.*Flags\s*WGPU_ENUM_ATTRIBUTE;")
+    if flag_enum_re.match(it.peek()) != None:
+        # print('--', api.name, 'is an enum flag type')
+        api.flag = True
 
     return api
 
@@ -324,7 +386,7 @@ def parseClass(name, it):
 
     return api
 
-def parseProcArgs(line):
+def parseProcArgs(line, proc_name):
     args = []
     for entry in line.split(","):
         entry = entry.strip()
@@ -336,16 +398,17 @@ def parseProcArgs(line):
             nullable = True
             entry = entry[13:].strip()
         tokens = entry.split()
+        prev_arg_name = None if len(args) == 0 else args[-1].name
         args.append(ProcedureArgumentApi(
-            name=tokens[-1],
-            type=c_type_to_zig_type(" ".join(tokens[:-1])),
+            name=to_snake_case(tokens[-1]),
+            type=c_type_to_zig_type(" ".join(tokens[:-1]), nullable, proc_name, prev_arg_name),
             nullable=nullable
         ))
     return args
 
 # -----------------------------------------------------------------------------
 
-def produceBinding(api, meta):
+def produceBinding(api, meta, zig_wgpu_procs):
     """Produce binding compatible with PpluX' wgpu.hpp"""
     binding = {
         "descriptors": [],
@@ -428,8 +491,28 @@ def produceBinding(api, meta):
         #     + "\tvoid setDefault();\n"
         #     + "END\n"
         # )
+
+        # name: str
+        # parent: str|None = None
+        # properties: list[PropertyApi] = field(default_factory=list)
+        # is_descriptor: bool = False
+        # default_overrides: list[(str,str)] = field(default_factory=list)
+
+        # PropertyApi
+        # name: str
+        # type: str
+        # counter: str|None = None  # list properties have an associated counter property
+        # default_value: str|None = None
+
+        # TODO: this needs to fix the types and convert from WGPU* types to the zig versions
         binding[namespace].append(f"pub const {cls_api.name} = wgpu.WGPU{cls_api.name};")
-        
+        binding[namespace].append(f"pub const {cls_api.name} = struct {{")
+        for prop in cls_api.properties:
+            zig_type = c_type_to_zig_type(prop.type, None, None, None).replace("WGPU_NULLABLE", "").replace("WGPU", "").replace("_NULLABLE", "").strip()
+            binding[namespace].append(f"\t{prop.name}: {zig_type} = std.mem.zeroes({zig_type}),")
+        binding[namespace].append("};\n")
+
+
 
         prop_defaults = [
             f"\t{prop.name} = {prop.default_value};\n"
@@ -472,6 +555,10 @@ def produceBinding(api, meta):
             arguments, argument_names = [f"self: {handle.name}"], []
             skip_next = False
             for arg in proc.arguments[1:]:
+                # HACK: rename because we have a method called reference
+                if arg.name == "reference":
+                    arg.name = "ref"
+
                 if skip_next:
                     skip_next = False
                     continue
@@ -514,7 +601,7 @@ def produceBinding(api, meta):
                     # end_cast = ")"
                     begin_cast = f""
                     end_cast = ""
-            
+
             name_and_args = f"{method_name}({', '.join(arguments)})"
             decls.append(f"\t{return_type} {name_and_args};\n")
             wrapped_call = f"{begin_cast}wgpu{handle.name}{proc.name}({argument_names_str}){end_cast}"
@@ -522,6 +609,7 @@ def produceBinding(api, meta):
                 f"\tpub inline fn {name_and_args} {return_type} {{\n"
                 + body.replace("{wrapped_call}", wrapped_call)
                 + "\t}\n"
+                + zig_wgpu_procs["wgpu" + handle.name + proc.name] + "\n\n"
             )
             # implems.append(
             #     f"{return_type} {handle.name}::{name_and_args} {{\n"
@@ -618,18 +706,26 @@ def produceBinding(api, meta):
     for enum in api.enumerations:
         if args.use_scoped_enums:
             if args.use_fake_scoped_enums:
-                enum = (
-                     f"pub const {enum.name} = enum(u32) {{\n"
-                     + "".join([ f"\t{format_enum_value(e.key)} = {e.value}\n" for e in enum.entries ])
-                     + "}\n"
-                    # f"ENUM({enum.name})\n"
-                    # + "".join([ f"\tENUM_ENTRY({format_enum_value(e.key)}, {e.value})\n" for e in enum.entries ])
-                    # + "END"
-                )
+                if enum.flag:
+                    enum = (
+                        f"pub const {enum.name} = packed struct(u32) {{\n"
+                        + "".join([ f"\t{format_enum_value(enum.name, e.key)}: bool = false,\n" for e in enum.entries ])
+                        + f"\t_padding: u{32 - len(enum.entries)} = 0,\n"
+                        + "};\n"
+                    )
+                else:
+                    enum = (
+                        f"pub const {enum.name} = enum(u32) {{\n"
+                        + "".join([ f"\t{format_enum_value(enum.name, e.key)} = {e.value},\n" for e in enum.entries ])
+                        + "};\n"
+                        # f"ENUM({enum.name})\n"
+                        # + "".join([ f"\tENUM_ENTRY({format_enum_value(enum.name, e.key)}, {e.value})\n" for e in enum.entries ])
+                        # + "END"
+                    )
             else:
                 enum = (
                     f"enum class {enum.name}: int {{\n"
-                    + "".join([ f"\t{format_enum_value(e.key)} = {e.value},\n" for e in enum.entries ])
+                    + "".join([ f"\t{format_enum_value(enum.name, e.key)} = {e.value},\n" for e in enum.entries ])
                     + "};"
                 )
         else:
@@ -715,14 +811,14 @@ def postProcessDefaults(api):
         if default_value is None:
             entry = name_to_entry.get("undefined")
             if entry is not None:
-                return f"{enum.name}::{format_enum_value(entry.key)}"
+                return f"{enum.name}::{format_enum_value(enum.name, entry.key)}"
         else:
             entry = name_to_entry.get(default_value.strip('"'))
             if entry is None:
                 logging.warning(f"Unknown value {default_value} for enum {prop_type}")
                 return None
             else:
-                return f"{enum.name}::{format_enum_value(entry.key)}"
+                return f"{enum.name}::{format_enum_value(enum.name, entry.key)}"
 
     def getType(path, cls_api):
         name_to_prop = { p.name: p for p in cls_api.properties }
@@ -778,7 +874,7 @@ def loadTemplate(path):
             .replace('{{{{', '{') # transform double brackets into format string
             .replace('}}}}', '}')
         )
-    
+
     return template, {
         "injected-decls": parseTemplateInjection(injected),
         "blacklist": blacklist,
@@ -786,7 +882,7 @@ def loadTemplate(path):
 
 def parseTemplateInjection(text):
     it = iter(text.split("\n"))
-    
+
     injected_data = defaultdict(list)
 
     begin_re = re.compile(r"^(HANDLE|DESCRIPTOR|STRUCT)\((\w+)\)")
@@ -832,11 +928,17 @@ def resolveFilepath(path):
     logging.error(f"Invalid template path: {path}")
     raise ValueError("Invalid template path")
 
-def format_enum_value(value):
+def format_enum_value(enum_name, value):
     if value[0] in '0123456789':
+        if enum_name in ["TextureDimension", "TextureViewDimension"]:
+            return "dim_" + value.lower()
         return '_' + to_snake_case(value)
-    else:
-        return to_snake_case(value)
+    # reserved words
+    if value == "Opaque":
+        return "opaq"
+    if value == "Error":
+        return "err"
+    return to_snake_case(value)
 
 def to_snake_case(name):
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
@@ -844,25 +946,50 @@ def to_snake_case(name):
     name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', name)
     return name.lower()
 
-def c_type_to_zig_type(type):
+def c_type_to_zig_type(type, nullable, proc_name, prev_arg_name):
+    if type.startswith("struct "):
+        type = type[7:]
+
     match type:
         case "uint32_t":
             return "u32"
+        case "int32_t":
+            return "i32"
+        case "uint64_t":
+            return "u64"
+        case "float":
+            return "f32"
         case "size_t":
             return "usize"
         case "void *":
             return "?*anyopaque"
         case "void const *":
-            return "*const anyopaque"
+            return "?*const anyopaque"
         case "char const *":
             return "?[*:0]const u8"
-    
-    # if type.endswith(" const *"):
-    #     return "*const " + type[:-8]
-    # if type.endswith(" *"):
-    #     return "*" + type[:-2]
+        case "WGPUBool":
+            return "bool"
 
-    # TODO: 'WGPUFeatureName *' -> '?[*]FeatureName'
+    if type.endswith("uint32_t const *"): # TODO: better binding override for the function call?
+        return "?[*]const u32"
+    if type.endswith(" const *"):
+        res = "?" if nullable else ""
+        if prev_arg_name != None and prev_arg_name[-5:] == "Count":
+            # print('------ proc:', proc_name, prev_arg_name[-5:])
+            # print(res + "[*]const " + type[4:-8])
+            return res + "[*]const " + type[4:-8]
+        # print(res + "const " + type[4:-8])
+        # special cases for slice syntax: RenderPassEncoderExecuteBundles, QueueSubmit
+        return res + "*const " + type[4:-8]
+    if type[-1:] == "*":
+        if proc_name in ["AdapterEnumerateFeatures", "DeviceEnumerateFeatures"]:
+            return "?[*]" + type[4:-2]
+        # print("----", type[4:], proc_name, type[4:-2])
+        return "*" + type[4:-2]
+
+    if type.endswith("Flags"):
+        return type[4:-5]
+
     return type
 
 # -----------------------------------------------------------------------------
@@ -903,6 +1030,6 @@ def unzip(l):
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    args = parser.parse_args() 
+    args = parser.parse_args()
     main(args)
-    
+

@@ -1,5 +1,6 @@
 const std = @import("std");
 const oil = @import("naga_oil");
+const wgpu = @import("wgpu");
 
 const Composer = oil.Composer;
 const Module = oil.Module;
@@ -10,6 +11,11 @@ const ImportDefinitions = oil.ImportDefinitions;
 pub fn main() !void {
     try testBigShaderDefs();
     try testBevyPbr();
+
+    var instance = wgpu.createInstance();
+    defer instance.release();
+
+    std.debug.print("foook: {}\n", .{instance});
 }
 
 fn checkExpectedResutls(src: Source, name: []const u8) !void {

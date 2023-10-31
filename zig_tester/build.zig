@@ -5,6 +5,14 @@ pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
 
     if (@import("builtin").os.tag == .macos) {
         exe.addObjectFile(.{ .path = thisDir() ++ "/../target/debug/libwgpu_native.a" });
+
+        exe.linkSystemLibraryName("objc");
+        exe.linkFramework("Metal");
+        exe.linkFramework("CoreGraphics");
+        exe.linkFramework("Foundation");
+        exe.linkFramework("IOKit");
+        exe.linkFramework("IOSurface");
+        exe.linkFramework("QuartzCore");
     } else if (@import("builtin").os.tag == .windows) {
         exe.addObjectFile(.{ .path = thisDir() ++ "/../target/x86_64-pc-windows-gnu/debug/libwgpu_native.a" });
     }
@@ -12,6 +20,10 @@ pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
 
 pub fn getModule(b: *std.Build) *std.build.Module {
     return b.createModule(.{ .source_file = .{ .path = thisDir() ++ "/src/naga_oil.zig" } });
+}
+
+pub fn getWgpuNativeModule(b: *std.Build) *std.build.Module {
+    return b.createModule(.{ .source_file = .{ .path = thisDir() ++ "/wgpu_generator/output/webgpu.zig" } });
 }
 
 inline fn thisDir() []const u8 {
@@ -30,6 +42,7 @@ pub fn build(b: *std.Build) void {
     });
     linkArtifact(exe);
     exe.addModule("naga_oil", getModule(b));
+    exe.addModule("wgpu", getWgpuNativeModule(b));
 
     const run_exe = b.addRunArtifact(exe);
     const run_step = b.step("run", "Run unit tests");

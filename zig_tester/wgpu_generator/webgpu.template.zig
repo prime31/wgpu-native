@@ -7,6 +7,9 @@ const wgpu = @import("wgpu.zig");
 {{begin-blacklist}}
 {{end-blacklist}}
 
+// Descriptors
+{{descriptors}}
+
 // Structs
 {{structs}}
 
@@ -16,14 +19,10 @@ const wgpu = @import("wgpu.zig");
 // Callback types
 {{callbacks}}
 
-// Handles
-extern fn wgpuCreateInstance(descriptor: [*c]const WGPUInstanceDescriptor) wgpu.Instance;
-const WGPUInstanceDescriptor = extern struct {
-    nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
-};
-const WGPUChainedStruct = extern struct {
-    next: [*c]const WGPUChainedStruct = null,
-    sType: c_uint = 0,
-};
+// Injected
+pub fn createInstance() Instance {
+    return wgpu.wgpuCreateInstance(null);
+}
 
+// Handles
 {{handles_impl}}
