@@ -1,1 +1,1 @@
-python3 generate.py -u ../../ffi/webgpu-headers/webgpu.h -u ../../ffi/wgpu.h -t webgpu.template.zig -o output/webgpu.zig -d defaults.txt -d extra-defaults.txt
+python3 generate.py -u ../../ffi/wgpu.h -u ../../ffi/webgpu.h -t webgpu.template.zig -o output/webgpu.zig -d defaults.txt -d extra-defaults.txt

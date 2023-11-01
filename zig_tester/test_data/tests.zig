@@ -15,7 +15,15 @@ pub fn main() !void {
     var instance = wgpu.createInstance();
     defer instance.release();
 
-    std.debug.print("foook: {}\n", .{instance});
+    // const cnt = instance.enumerateAdapters(null, null);
+    // std.debug.print("cnt: {}\n", .{cnt});
+
+    // var adapters = std.heap.c_allocator.alloc(wgpu.Adapter, cnt) catch unreachable;
+    // _ = instance.enumerateAdapters(null, adapters.ptr);
+
+    // var props: wgpu.AdapterProperties = undefined;
+    // adapters[0].getProperties(&props);
+    // std.debug.print("foook: {}, {s}, {s}, {}\n", .{ props, props.driver_description, props.architecture, props.vendor_id });
 }
 
 fn checkExpectedResutls(src: Source, name: []const u8) !void {

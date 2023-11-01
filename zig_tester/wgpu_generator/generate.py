@@ -43,6 +43,7 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 from os.path import dirname, isfile, join
 import logging
+import shutil
 import subprocess
 
 parser = argparse.ArgumentParser(description="""
@@ -97,8 +98,11 @@ parser.add_argument("--use-non-member-procedures", action='store_true',
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 def main(args):
-    # TODO: we need to run through the method params and convert from WGPU* types to the zig versions
-    zig_wgpu_procs = parse_translate_c_output()
+    # copy the webgpu-headers repo file locally so we get git diffs when it changes
+    shutil.copyfile("../../ffi/webgpu-headers/webgpu.h", "../../ffi/webgpu.h")
+
+    zig_api = ZigApi()
+    zig_api.parse()
 
     applyDefaultArgs(args)
     template, meta = loadTemplate(args.template)
@@ -111,7 +115,7 @@ def main(args):
     if args.pplux:
         binding = producePpluxBinding(api)
     else:
-        binding = produceBinding(api, meta, zig_wgpu_procs)
+        binding = produceBinding(api, meta, zig_api)
 
     generateOutput(args.output, template, binding)
     os.popen('zig fmt output').read()
@@ -121,19 +125,6 @@ def applyDefaultArgs(args):
         args.header_url = [DEFAULT_HEADER_URL]
     if not args.defaults:
         args.defaults = ["defaults.txt", "extra-defaults.txt"]
-
-def parse_translate_c_output():
-    fn_re = re.compile(r"pub extern fn (.*?)\(")
-    dict = {}
-
-    it = iter(os.popen('zig translate-c ../../ffi/wgpu.h').read().splitlines())
-    while (x := next(it, None)) is not None:
-        if not x.startswith("pub extern fn wgpu"):
-            continue
-        if (match := fn_re.search(x)):
-            dict[match.group(1)] = x[3:]
-    return dict
-
 
 # -----------------------------------------------------------------------------
 # Parser, for analyzing webgpu.h
@@ -205,6 +196,45 @@ class WebGpuApi:
     type_aliases: list[TypeAliasApi] = field(default_factory=list)
     stypes: dict[str,str] = field(default_factory=dict) # Name => SType::Name
 
+@dataclass
+class ZigApi:
+    methods: dict[str,str] = field(default_factory=dict)
+    structs: dict[str,list] = field(default_factory=dict)
+
+    def parse(self):
+        fn_re = re.compile(r"pub extern fn (.*?)\(")
+        struct_re = re.compile(r"pub const struct_WGPU(.*?)\s")
+
+        it = iter(os.popen('zig translate-c ../../ffi/wgpu.h').read().splitlines())
+        while (x := next(it, None)) is not None:
+            if (match := fn_re.search(x)):
+                self.methods[match.group(1)] = self.convert_types(x[3:]) # x[3:].replace("WGPUBool", "bool").replace("WGPU", "").replace("Flags", "")
+                continue
+
+            if (match := struct_re.search(x)):
+                self.parse_struct(match.group(1), x, it)
+
+    def parse_struct(self, name, line, it):
+        field_re = re.compile("\s*(.*?):")
+        end_re = re.compile(".*}")
+
+        lines = [line.replace("struct_WGPU", "")]
+
+        while (x := next(it, None)) is not None:
+            if (end_re.search(x) != None):
+                lines.append(x)
+                break
+
+            # fix up the WGPU* type names and field names
+            if (match := field_re.match(x)):
+                lines.append(self.convert_types(x.replace(match.group(1), to_snake_case(match.group(1)))))
+
+        self.structs[name] = lines
+
+    def convert_types(self, x):
+        return x.replace("struct_", "").replace("WGPUBool", "bool").replace("WGPU", "").replace("Flags", "")
+
+
 class Peekable(object):
     """An iterable class which can return the next element of the wrapped
     iterator without advancing it."""
@@ -241,10 +271,13 @@ def parseHeader(api, header):
         for line in header.split("\n")
     ]))
 
+    is_native = "wgpuSetLogCallback" in header
+
     struct_re = re.compile(r"struct *WGPU(\w+) *{")
     handle_re = re.compile(r"typedef struct .*WGPU([^_]\w+)\s*;")
     typedef_re = re.compile(r"typedef (\w+) WGPU(\w+)\s*;")
     procedure_re = re.compile(r"(?:WGPU_EXPORT)?\s+([\w *]+) wgpu(\w+)\((.*)\)\s*;")
+    procedure_native_re = re.compile(r"([\w *]+) wgpu(\w+)\((.*)\)\s*;")
     enum_re = re.compile(r"typedef enum WGPU(\w+) {")
     flag_enum_re = re.compile(r"typedef WGPUFlags WGPU(\w+)Flags\s*;")
     callback_re = re.compile(r"typedef void \(\*WGPU(\w+)Callback\)\((.*)\)\s*;")
@@ -268,6 +301,21 @@ def parseHeader(api, header):
             continue
 
         if (match := procedure_re.search(x)):
+            if is_native:
+                print("----", match.group(2))
+
+            return_type = match.group(1)
+            if return_type.startswith("WGPU_EXPORT"):
+                return_type = return_type[len("WGPU_EXPORT"):]
+            return_type = c_type_to_zig_type(return_type.strip(), False, None, None)
+            api.procedures.append(ProcedureApi(
+                name=match.group(2),
+                return_type=return_type,
+                arguments=parseProcArgs(match.group(3), match.group(2)),
+            ))
+            continue
+
+        if (match := procedure_native_re.search(x)):
             return_type = match.group(1)
             if return_type.startswith("WGPU_EXPORT"):
                 return_type = return_type[len("WGPU_EXPORT"):]
@@ -303,6 +351,7 @@ def parseHeader(api, header):
                 raw_arguments=match.group(2),
             ))
             continue
+
 
     # Post process: find parent of each method
     for proc in api.procedures:
@@ -408,7 +457,7 @@ def parseProcArgs(line, proc_name):
 
 # -----------------------------------------------------------------------------
 
-def produceBinding(api, meta, zig_wgpu_procs):
+def produceBinding(api, meta, zig_api):
     """Produce binding compatible with PpluX' wgpu.hpp"""
     binding = {
         "descriptors": [],
@@ -505,12 +554,17 @@ def produceBinding(api, meta, zig_wgpu_procs):
         # default_value: str|None = None
 
         # TODO: this needs to fix the types and convert from WGPU* types to the zig versions
-        binding[namespace].append(f"pub const {cls_api.name} = wgpu.WGPU{cls_api.name};")
-        binding[namespace].append(f"pub const {cls_api.name} = struct {{")
-        for prop in cls_api.properties:
-            zig_type = c_type_to_zig_type(prop.type, None, None, None).replace("WGPU_NULLABLE", "").replace("WGPU", "").replace("_NULLABLE", "").strip()
-            binding[namespace].append(f"\t{prop.name}: {zig_type} = std.mem.zeroes({zig_type}),")
-        binding[namespace].append("};\n")
+        # binding[namespace].append(f"pub const {cls_api.name} = wgpu.WGPU{cls_api.name};")
+        # binding[namespace].append(f"pub const {cls_api.name} = struct {{")
+        # for prop in cls_api.properties:
+        #     zig_type = c_type_to_zig_type(prop.type, None, None, None).replace("WGPU_NULLABLE", "").replace("WGPU", "").replace("_NULLABLE", "").strip()
+        #     binding[namespace].append(f"\t{to_snake_case(prop.name)}: {zig_type} = std.mem.zeroes({zig_type}),")
+        # binding[namespace].append("};\n")
+
+        struct_lines = zig_api.structs[cls_api.name]
+        for line in struct_lines:
+            binding[namespace].append(line)
+        binding[namespace].append("\n")
 
 
 
@@ -609,8 +663,9 @@ def produceBinding(api, meta, zig_wgpu_procs):
                 f"\tpub inline fn {name_and_args} {return_type} {{\n"
                 + body.replace("{wrapped_call}", wrapped_call)
                 + "\t}\n"
-                + zig_wgpu_procs["wgpu" + handle.name + proc.name] + "\n\n"
+                + zig_api.methods["wgpu" + handle.name + proc.name] + "\n\n"
             )
+
             # implems.append(
             #     f"{return_type} {handle.name}::{name_and_args} {{\n"
             #     + body.replace("{wrapped_call}", wrapped_call)
@@ -965,8 +1020,12 @@ def c_type_to_zig_type(type, nullable, proc_name, prev_arg_name):
             return "?*anyopaque"
         case "void const *":
             return "?*const anyopaque"
+        case "void* const":
+            return "?*const anyopaque"
         case "char const *":
             return "?[*:0]const u8"
+        case "const char *":
+            return "[*c]const u8"
         case "WGPUBool":
             return "bool"
 
