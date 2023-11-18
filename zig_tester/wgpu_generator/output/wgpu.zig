@@ -486,26 +486,15 @@ pub const struct_WGPUPrimitiveState = extern struct {
     cullMode: WGPUCullMode = @import("std").mem.zeroes(WGPUCullMode),
 };
 pub const WGPUQueryType_Occlusion: c_int = 0;
-pub const WGPUQueryType_PipelineStatistics: c_int = 1;
-pub const WGPUQueryType_Timestamp: c_int = 2;
+pub const WGPUQueryType_Timestamp: c_int = 1;
 pub const WGPUQueryType_Force32: c_int = 2147483647;
 pub const enum_WGPUQueryType = c_uint;
 pub const WGPUQueryType = enum_WGPUQueryType;
-pub const WGPUPipelineStatisticName_VertexShaderInvocations: c_int = 0;
-pub const WGPUPipelineStatisticName_ClipperInvocations: c_int = 1;
-pub const WGPUPipelineStatisticName_ClipperPrimitivesOut: c_int = 2;
-pub const WGPUPipelineStatisticName_FragmentShaderInvocations: c_int = 3;
-pub const WGPUPipelineStatisticName_ComputeShaderInvocations: c_int = 4;
-pub const WGPUPipelineStatisticName_Force32: c_int = 2147483647;
-pub const enum_WGPUPipelineStatisticName = c_uint;
-pub const WGPUPipelineStatisticName = enum_WGPUPipelineStatisticName;
 pub const struct_WGPUQuerySetDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
     type: WGPUQueryType = @import("std").mem.zeroes(WGPUQueryType),
     count: u32 = @import("std").mem.zeroes(u32),
-    pipelineStatistics: [*c]const WGPUPipelineStatisticName = @import("std").mem.zeroes([*c]const WGPUPipelineStatisticName),
-    pipelineStatisticCount: usize = @import("std").mem.zeroes(usize),
 };
 pub const struct_WGPUQueueDescriptor = extern struct {
     nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
@@ -1095,15 +1084,14 @@ pub const WGPUFeatureName_Undefined: c_int = 0;
 pub const WGPUFeatureName_DepthClipControl: c_int = 1;
 pub const WGPUFeatureName_Depth32FloatStencil8: c_int = 2;
 pub const WGPUFeatureName_TimestampQuery: c_int = 3;
-pub const WGPUFeatureName_PipelineStatisticsQuery: c_int = 4;
-pub const WGPUFeatureName_TextureCompressionBC: c_int = 5;
-pub const WGPUFeatureName_TextureCompressionETC2: c_int = 6;
-pub const WGPUFeatureName_TextureCompressionASTC: c_int = 7;
-pub const WGPUFeatureName_IndirectFirstInstance: c_int = 8;
-pub const WGPUFeatureName_ShaderF16: c_int = 9;
-pub const WGPUFeatureName_RG11B10UfloatRenderable: c_int = 10;
-pub const WGPUFeatureName_BGRA8UnormStorage: c_int = 11;
-pub const WGPUFeatureName_Float32Filterable: c_int = 12;
+pub const WGPUFeatureName_TextureCompressionBC: c_int = 4;
+pub const WGPUFeatureName_TextureCompressionETC2: c_int = 5;
+pub const WGPUFeatureName_TextureCompressionASTC: c_int = 6;
+pub const WGPUFeatureName_IndirectFirstInstance: c_int = 7;
+pub const WGPUFeatureName_ShaderF16: c_int = 8;
+pub const WGPUFeatureName_RG11B10UfloatRenderable: c_int = 9;
+pub const WGPUFeatureName_BGRA8UnormStorage: c_int = 10;
+pub const WGPUFeatureName_Float32Filterable: c_int = 11;
 pub const WGPUFeatureName_Force32: c_int = 2147483647;
 pub const enum_WGPUFeatureName = c_uint;
 pub const WGPUFeatureName = enum_WGPUFeatureName;
@@ -1381,11 +1369,9 @@ pub const WGPUProcCommandEncoderSetLabel = ?*const fn (WGPUCommandEncoder, [*c]c
 pub const WGPUProcCommandEncoderWriteTimestamp = ?*const fn (WGPUCommandEncoder, WGPUQuerySet, u32) callconv(.C) void;
 pub const WGPUProcCommandEncoderReference = ?*const fn (WGPUCommandEncoder) callconv(.C) void;
 pub const WGPUProcCommandEncoderRelease = ?*const fn (WGPUCommandEncoder) callconv(.C) void;
-pub const WGPUProcComputePassEncoderBeginPipelineStatisticsQuery = ?*const fn (WGPUComputePassEncoder, WGPUQuerySet, u32) callconv(.C) void;
 pub const WGPUProcComputePassEncoderDispatchWorkgroups = ?*const fn (WGPUComputePassEncoder, u32, u32, u32) callconv(.C) void;
 pub const WGPUProcComputePassEncoderDispatchWorkgroupsIndirect = ?*const fn (WGPUComputePassEncoder, WGPUBuffer, u64) callconv(.C) void;
 pub const WGPUProcComputePassEncoderEnd = ?*const fn (WGPUComputePassEncoder) callconv(.C) void;
-pub const WGPUProcComputePassEncoderEndPipelineStatisticsQuery = ?*const fn (WGPUComputePassEncoder) callconv(.C) void;
 pub const WGPUProcComputePassEncoderInsertDebugMarker = ?*const fn (WGPUComputePassEncoder, [*c]const u8) callconv(.C) void;
 pub const WGPUProcComputePassEncoderPopDebugGroup = ?*const fn (WGPUComputePassEncoder) callconv(.C) void;
 pub const WGPUProcComputePassEncoderPushDebugGroup = ?*const fn (WGPUComputePassEncoder, [*c]const u8) callconv(.C) void;
@@ -1463,14 +1449,12 @@ pub const WGPUProcRenderBundleEncoderSetVertexBuffer = ?*const fn (WGPURenderBun
 pub const WGPUProcRenderBundleEncoderReference = ?*const fn (WGPURenderBundleEncoder) callconv(.C) void;
 pub const WGPUProcRenderBundleEncoderRelease = ?*const fn (WGPURenderBundleEncoder) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderBeginOcclusionQuery = ?*const fn (WGPURenderPassEncoder, u32) callconv(.C) void;
-pub const WGPUProcRenderPassEncoderBeginPipelineStatisticsQuery = ?*const fn (WGPURenderPassEncoder, WGPUQuerySet, u32) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderDraw = ?*const fn (WGPURenderPassEncoder, u32, u32, u32, u32) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderDrawIndexed = ?*const fn (WGPURenderPassEncoder, u32, u32, u32, i32, u32) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderDrawIndexedIndirect = ?*const fn (WGPURenderPassEncoder, WGPUBuffer, u64) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderDrawIndirect = ?*const fn (WGPURenderPassEncoder, WGPUBuffer, u64) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderEnd = ?*const fn (WGPURenderPassEncoder) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderEndOcclusionQuery = ?*const fn (WGPURenderPassEncoder) callconv(.C) void;
-pub const WGPUProcRenderPassEncoderEndPipelineStatisticsQuery = ?*const fn (WGPURenderPassEncoder) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderExecuteBundles = ?*const fn (WGPURenderPassEncoder, usize, [*c]const WGPURenderBundle) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderInsertDebugMarker = ?*const fn (WGPURenderPassEncoder, [*c]const u8) callconv(.C) void;
 pub const WGPUProcRenderPassEncoderPopDebugGroup = ?*const fn (WGPURenderPassEncoder) callconv(.C) void;
@@ -1567,11 +1551,9 @@ pub extern fn wgpuCommandEncoderSetLabel(commandEncoder: WGPUCommandEncoder, lab
 pub extern fn wgpuCommandEncoderWriteTimestamp(commandEncoder: WGPUCommandEncoder, querySet: WGPUQuerySet, queryIndex: u32) void;
 pub extern fn wgpuCommandEncoderReference(commandEncoder: WGPUCommandEncoder) void;
 pub extern fn wgpuCommandEncoderRelease(commandEncoder: WGPUCommandEncoder) void;
-pub extern fn wgpuComputePassEncoderBeginPipelineStatisticsQuery(computePassEncoder: WGPUComputePassEncoder, querySet: WGPUQuerySet, queryIndex: u32) void;
 pub extern fn wgpuComputePassEncoderDispatchWorkgroups(computePassEncoder: WGPUComputePassEncoder, workgroupCountX: u32, workgroupCountY: u32, workgroupCountZ: u32) void;
 pub extern fn wgpuComputePassEncoderDispatchWorkgroupsIndirect(computePassEncoder: WGPUComputePassEncoder, indirectBuffer: WGPUBuffer, indirectOffset: u64) void;
 pub extern fn wgpuComputePassEncoderEnd(computePassEncoder: WGPUComputePassEncoder) void;
-pub extern fn wgpuComputePassEncoderEndPipelineStatisticsQuery(computePassEncoder: WGPUComputePassEncoder) void;
 pub extern fn wgpuComputePassEncoderInsertDebugMarker(computePassEncoder: WGPUComputePassEncoder, markerLabel: [*c]const u8) void;
 pub extern fn wgpuComputePassEncoderPopDebugGroup(computePassEncoder: WGPUComputePassEncoder) void;
 pub extern fn wgpuComputePassEncoderPushDebugGroup(computePassEncoder: WGPUComputePassEncoder, groupLabel: [*c]const u8) void;
@@ -1649,14 +1631,12 @@ pub extern fn wgpuRenderBundleEncoderSetVertexBuffer(renderBundleEncoder: WGPURe
 pub extern fn wgpuRenderBundleEncoderReference(renderBundleEncoder: WGPURenderBundleEncoder) void;
 pub extern fn wgpuRenderBundleEncoderRelease(renderBundleEncoder: WGPURenderBundleEncoder) void;
 pub extern fn wgpuRenderPassEncoderBeginOcclusionQuery(renderPassEncoder: WGPURenderPassEncoder, queryIndex: u32) void;
-pub extern fn wgpuRenderPassEncoderBeginPipelineStatisticsQuery(renderPassEncoder: WGPURenderPassEncoder, querySet: WGPUQuerySet, queryIndex: u32) void;
 pub extern fn wgpuRenderPassEncoderDraw(renderPassEncoder: WGPURenderPassEncoder, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32) void;
 pub extern fn wgpuRenderPassEncoderDrawIndexed(renderPassEncoder: WGPURenderPassEncoder, indexCount: u32, instanceCount: u32, firstIndex: u32, baseVertex: i32, firstInstance: u32) void;
 pub extern fn wgpuRenderPassEncoderDrawIndexedIndirect(renderPassEncoder: WGPURenderPassEncoder, indirectBuffer: WGPUBuffer, indirectOffset: u64) void;
 pub extern fn wgpuRenderPassEncoderDrawIndirect(renderPassEncoder: WGPURenderPassEncoder, indirectBuffer: WGPUBuffer, indirectOffset: u64) void;
 pub extern fn wgpuRenderPassEncoderEnd(renderPassEncoder: WGPURenderPassEncoder) void;
 pub extern fn wgpuRenderPassEncoderEndOcclusionQuery(renderPassEncoder: WGPURenderPassEncoder) void;
-pub extern fn wgpuRenderPassEncoderEndPipelineStatisticsQuery(renderPassEncoder: WGPURenderPassEncoder) void;
 pub extern fn wgpuRenderPassEncoderExecuteBundles(renderPassEncoder: WGPURenderPassEncoder, bundleCount: usize, bundles: [*c]const WGPURenderBundle) void;
 pub extern fn wgpuRenderPassEncoderInsertDebugMarker(renderPassEncoder: WGPURenderPassEncoder, markerLabel: [*c]const u8) void;
 pub extern fn wgpuRenderPassEncoderPopDebugGroup(renderPassEncoder: WGPURenderPassEncoder) void;
@@ -1716,6 +1696,7 @@ pub const WGPUSType_SupportedLimitsExtras: c_int = 196613;
 pub const WGPUSType_InstanceExtras: c_int = 196614;
 pub const WGPUSType_BindGroupEntryExtras: c_int = 196615;
 pub const WGPUSType_BindGroupLayoutEntryExtras: c_int = 196616;
+pub const WGPUSType_QuerySetDescriptorExtras: c_int = 196617;
 pub const WGPUNativeSType_Force32: c_int = 2147483647;
 pub const enum_WGPUNativeSType = c_uint;
 pub const WGPUNativeSType = enum_WGPUNativeSType;
@@ -1726,6 +1707,7 @@ pub const WGPUNativeFeature_MultiDrawIndirectCount: c_int = 196612;
 pub const WGPUNativeFeature_VertexWritableStorage: c_int = 196613;
 pub const WGPUNativeFeature_TextureBindingArray: c_int = 196614;
 pub const WGPUNativeFeature_SampledTextureAndStorageBufferArrayNonUniformIndexing: c_int = 196615;
+pub const WGPUNativeFeature_PipelineStatisticsQuery: c_int = 196616;
 pub const WGPUNativeFeature_Force32: c_int = 2147483647;
 pub const enum_WGPUNativeFeature = c_uint;
 pub const WGPUNativeFeature = enum_WGPUNativeFeature;
@@ -1772,6 +1754,18 @@ pub const WGPUGles3MinorVersion_Version2: c_int = 3;
 pub const WGPUGles3MinorVersion_Force32: c_int = 2147483647;
 pub const enum_WGPUGles3MinorVersion = c_uint;
 pub const WGPUGles3MinorVersion = enum_WGPUGles3MinorVersion;
+pub const WGPUPipelineStatisticName_VertexShaderInvocations: c_int = 0;
+pub const WGPUPipelineStatisticName_ClipperInvocations: c_int = 1;
+pub const WGPUPipelineStatisticName_ClipperPrimitivesOut: c_int = 2;
+pub const WGPUPipelineStatisticName_FragmentShaderInvocations: c_int = 3;
+pub const WGPUPipelineStatisticName_ComputeShaderInvocations: c_int = 4;
+pub const WGPUPipelineStatisticName_Force32: c_int = 2147483647;
+pub const enum_WGPUPipelineStatisticName = c_uint;
+pub const WGPUPipelineStatisticName = enum_WGPUPipelineStatisticName;
+pub const WGPUNativeQueryType_PipelineStatistics: c_int = 196608;
+pub const WGPUNativeQueryType_Force32: c_int = 2147483647;
+pub const enum_WGPUNativeQueryType = c_uint;
+pub const WGPUNativeQueryType = enum_WGPUNativeQueryType;
 pub const struct_WGPUInstanceExtras = extern struct {
     chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
     backends: WGPUInstanceBackendFlags = @import("std").mem.zeroes(WGPUInstanceBackendFlags),
@@ -1888,6 +1882,12 @@ pub const struct_WGPUBindGroupLayoutEntryExtras = extern struct {
     count: u32 = @import("std").mem.zeroes(u32),
 };
 pub const WGPUBindGroupLayoutEntryExtras = struct_WGPUBindGroupLayoutEntryExtras;
+pub const struct_WGPUQuerySetDescriptorExtras = extern struct {
+    chain: WGPUChainedStruct = @import("std").mem.zeroes(WGPUChainedStruct),
+    pipelineStatistics: [*c]const WGPUPipelineStatisticName = @import("std").mem.zeroes([*c]const WGPUPipelineStatisticName),
+    pipelineStatisticCount: usize = @import("std").mem.zeroes(usize),
+};
+pub const WGPUQuerySetDescriptorExtras = struct_WGPUQuerySetDescriptorExtras;
 pub const WGPULogCallback = ?*const fn (WGPULogLevel, [*c]const u8, ?*anyopaque) callconv(.C) void;
 pub extern fn wgpuGenerateReport(instance: WGPUInstance, report: [*c]WGPUGlobalReport) void;
 pub extern fn wgpuInstanceEnumerateAdapters(instance: WGPUInstance, options: [*c]const WGPUInstanceEnumerateAdapterOptions, adapters: [*c]WGPUAdapter) usize;
@@ -1901,6 +1901,10 @@ pub extern fn wgpuRenderPassEncoderMultiDrawIndirect(encoder: WGPURenderPassEnco
 pub extern fn wgpuRenderPassEncoderMultiDrawIndexedIndirect(encoder: WGPURenderPassEncoder, buffer: WGPUBuffer, offset: u64, count: u32) void;
 pub extern fn wgpuRenderPassEncoderMultiDrawIndirectCount(encoder: WGPURenderPassEncoder, buffer: WGPUBuffer, offset: u64, count_buffer: WGPUBuffer, count_buffer_offset: u64, max_count: u32) void;
 pub extern fn wgpuRenderPassEncoderMultiDrawIndexedIndirectCount(encoder: WGPURenderPassEncoder, buffer: WGPUBuffer, offset: u64, count_buffer: WGPUBuffer, count_buffer_offset: u64, max_count: u32) void;
+pub extern fn wgpuComputePassEncoderBeginPipelineStatisticsQuery(computePassEncoder: WGPUComputePassEncoder, querySet: WGPUQuerySet, queryIndex: u32) void;
+pub extern fn wgpuComputePassEncoderEndPipelineStatisticsQuery(computePassEncoder: WGPUComputePassEncoder) void;
+pub extern fn wgpuRenderPassEncoderBeginPipelineStatisticsQuery(renderPassEncoder: WGPURenderPassEncoder, querySet: WGPUQuerySet, queryIndex: u32) void;
+pub extern fn wgpuRenderPassEncoderEndPipelineStatisticsQuery(renderPassEncoder: WGPURenderPassEncoder) void;
 pub const __block = @compileError("unable to translate macro: undefined identifier `__attribute__`"); // (no file):37:9
 pub const __INTMAX_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `L`"); // (no file):92:9
 pub const __UINTMAX_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `UL`"); // (no file):98:9
@@ -2061,13 +2065,13 @@ pub const __enum_closed_decl = @compileError("unable to translate C expr: expect
 pub const __options_decl = @compileError("unable to translate C expr: expected ')' instead got '...'"); // /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk/usr/include/sys/cdefs.h:958:9
 pub const __options_closed_decl = @compileError("unable to translate C expr: expected ')' instead got '...'"); // /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk/usr/include/sys/cdefs.h:960:9
 pub const __offsetof = @compileError("unable to translate macro: undefined identifier `__builtin_offsetof`"); // /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk/usr/include/sys/_types.h:83:9
-pub const offsetof = @compileError("unable to translate macro: undefined identifier `__builtin_offsetof`"); // /Users/mikedesaro/zig/lib/include/stddef.h:116:9
+pub const offsetof = @compileError("unable to translate macro: undefined identifier `__builtin_offsetof`"); // /Users/desaro/zig/lib/include/stddef.h:116:9
 pub const __llvm__ = @as(c_int, 1);
 pub const __clang__ = @as(c_int, 1);
 pub const __clang_major__ = @as(c_int, 17);
 pub const __clang_minor__ = @as(c_int, 0);
 pub const __clang_patchlevel__ = @as(c_int, 3);
-pub const __clang_version__ = "17.0.3 (https://github.com/ziglang/zig-bootstrap bc1284dfdb4f9d2465a715e996214aff11baeb2d)";
+pub const __clang_version__ = "17.0.3 (https://github.com/ziglang/zig-bootstrap 1dc1fa6a122996fcd030cc956385e055289e09d9)";
 pub const __GNUC__ = @as(c_int, 4);
 pub const __GNUC_MINOR__ = @as(c_int, 2);
 pub const __GNUC_PATCHLEVEL__ = @as(c_int, 1);
@@ -2094,7 +2098,7 @@ pub const __FPCLASS_POSSUBNORMAL = @as(c_int, 0x0080);
 pub const __FPCLASS_POSNORMAL = @as(c_int, 0x0100);
 pub const __FPCLASS_POSINF = @as(c_int, 0x0200);
 pub const __PRAGMA_REDEFINE_EXTNAME = @as(c_int, 1);
-pub const __VERSION__ = "Clang 17.0.3 (https://github.com/ziglang/zig-bootstrap bc1284dfdb4f9d2465a715e996214aff11baeb2d)";
+pub const __VERSION__ = "Clang 17.0.3 (https://github.com/ziglang/zig-bootstrap 1dc1fa6a122996fcd030cc956385e055289e09d9)";
 pub const __OBJC_BOOL_IS_BOOL = @as(c_int, 1);
 pub const __CONSTANT_CFSTRINGS__ = @as(c_int, 1);
 pub const __BLOCKS__ = @as(c_int, 1);

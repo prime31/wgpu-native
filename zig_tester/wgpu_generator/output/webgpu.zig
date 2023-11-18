@@ -124,8 +124,6 @@ pub const QuerySetDescriptor = extern struct {
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
     type: QueryType = @import("std").mem.zeroes(QueryType),
     count: u32 = @import("std").mem.zeroes(u32),
-    pipeline_statistics: [*c]const PipelineStatisticName = @import("std").mem.zeroes([*c]const PipelineStatisticName),
-    pipeline_statistic_count: usize = @import("std").mem.zeroes(usize),
 };
 
 pub const QueueDescriptor = extern struct {
@@ -533,6 +531,12 @@ pub const BindGroupLayoutEntryExtras = extern struct {
     count: u32 = @import("std").mem.zeroes(u32),
 };
 
+pub const QuerySetDescriptorExtras = extern struct {
+    chain: ChainedStruct = @import("std").mem.zeroes(ChainedStruct),
+    pipeline_statistics: [*c]const PipelineStatisticName = @import("std").mem.zeroes([*c]const PipelineStatisticName),
+    pipeline_statistic_count: usize = @import("std").mem.zeroes(usize),
+};
+
 pub const ChainedStruct = extern struct {
     next: [*c]const ChainedStruct = @import("std").mem.zeroes([*c]const ChainedStruct),
     s_type: SType = @import("std").mem.zeroes(SType),
@@ -728,6 +732,7 @@ pub const NativeSType = enum(u32) {
     instance_extras = 196614,
     bind_group_entry_extras = 196615,
     bind_group_layout_entry_extras = 196616,
+    query_set_descriptor_extras = 196617,
 };
 
 pub const NativeFeature = enum(u32) {
@@ -738,6 +743,7 @@ pub const NativeFeature = enum(u32) {
     vertex_writable_storage = 196613,
     texture_binding_array = 196614,
     sampled_texture_and_storage_buffer_array_non_uniform_indexing = 196615,
+    pipeline_statistics_query = 196616,
 };
 
 pub const LogLevel = enum(u32) {
@@ -767,6 +773,18 @@ pub const Gles3MinorVersion = enum(u32) {
     version0 = 1,
     version1 = 2,
     version2 = 3,
+};
+
+pub const PipelineStatisticName = enum(u32) {
+    vertex_shader_invocations = 0,
+    clipper_invocations = 1,
+    clipper_primitives_out = 2,
+    fragment_shader_invocations = 3,
+    compute_shader_invocations = 4,
+};
+
+pub const NativeQueryType = enum(u32) {
+    pipeline_statistics = 196608,
 };
 
 pub const AdapterType = enum(u32) {
@@ -916,15 +934,14 @@ pub const FeatureName = enum(u32) {
     depth_clip_control = 1,
     depth32_float_stencil8 = 2,
     timestamp_query = 3,
-    pipeline_statistics_query = 4,
-    texture_compression_bc = 5,
-    texture_compression_etc2 = 6,
-    texture_compression_astc = 7,
-    indirect_first_instance = 8,
-    shader_f16 = 9,
-    rg11_b10_ufloat_renderable = 10,
-    bgra8_unorm_storage = 11,
-    float32_filterable = 12,
+    texture_compression_bc = 4,
+    texture_compression_etc2 = 5,
+    texture_compression_astc = 6,
+    indirect_first_instance = 7,
+    shader_f16 = 8,
+    rg11_b10_ufloat_renderable = 9,
+    bgra8_unorm_storage = 10,
+    float32_filterable = 11,
 };
 
 pub const FilterMode = enum(u32) {
@@ -954,14 +971,6 @@ pub const MipmapFilterMode = enum(u32) {
     linear = 1,
 };
 
-pub const PipelineStatisticName = enum(u32) {
-    vertex_shader_invocations = 0,
-    clipper_invocations = 1,
-    clipper_primitives_out = 2,
-    fragment_shader_invocations = 3,
-    compute_shader_invocations = 4,
-};
-
 pub const PowerPreference = enum(u32) {
     undefined = 0,
     low_power = 1,
@@ -985,8 +994,7 @@ pub const PrimitiveTopology = enum(u32) {
 
 pub const QueryType = enum(u32) {
     occlusion = 0,
-    pipeline_statistics = 1,
-    timestamp = 2,
+    timestamp = 1,
 };
 
 pub const QueueWorkDoneStatus = enum(u32) {
@@ -1523,6 +1531,11 @@ pub const ComputePassEncoder = *opaque {
     }
     extern fn wgpuComputePassEncoderBeginPipelineStatisticsQuery(computePassEncoder: ComputePassEncoder, querySet: QuerySet, queryIndex: u32) void;
 
+    pub inline fn endPipelineStatisticsQuery(self: ComputePassEncoder) void {
+        return wgpuComputePassEncoderEndPipelineStatisticsQuery(self);
+    }
+    extern fn wgpuComputePassEncoderEndPipelineStatisticsQuery(computePassEncoder: ComputePassEncoder) void;
+
     pub inline fn dispatchWorkgroups(self: ComputePassEncoder, workgroup_count_x: u32, workgroup_count_y: u32, workgroup_count_z: u32) void {
         return wgpuComputePassEncoderDispatchWorkgroups(self, workgroup_count_x, workgroup_count_y, workgroup_count_z);
     }
@@ -1537,11 +1550,6 @@ pub const ComputePassEncoder = *opaque {
         return wgpuComputePassEncoderEnd(self);
     }
     extern fn wgpuComputePassEncoderEnd(computePassEncoder: ComputePassEncoder) void;
-
-    pub inline fn endPipelineStatisticsQuery(self: ComputePassEncoder) void {
-        return wgpuComputePassEncoderEndPipelineStatisticsQuery(self);
-    }
-    extern fn wgpuComputePassEncoderEndPipelineStatisticsQuery(computePassEncoder: ComputePassEncoder) void;
 
     pub inline fn insertDebugMarker(self: ComputePassEncoder, marker_label: ?[*:0]const u8) void {
         return wgpuComputePassEncoderInsertDebugMarker(self, marker_label);
@@ -1739,7 +1747,7 @@ pub const Device = *opaque {
 };
 
 pub const Instance = *opaque {
-    pub inline fn enumerateAdapters(self: Instance, options: ?*const InstanceEnumerateAdapterOptions, adapters: ?[*]Adapter) usize {
+    pub inline fn enumerateAdapters(self: Instance, options: *const InstanceEnumerateAdapterOptions, adapters: *Adapter) usize {
         return wgpuInstanceEnumerateAdapters(self, options, adapters);
     }
     extern fn wgpuInstanceEnumerateAdapters(instance: Instance, options: [*c]const InstanceEnumerateAdapterOptions, adapters: [*c]Adapter) usize;
@@ -1981,15 +1989,20 @@ pub const RenderPassEncoder = *opaque {
     }
     extern fn wgpuRenderPassEncoderMultiDrawIndexedIndirectCount(encoder: RenderPassEncoder, buffer: Buffer, offset: u64, count_buffer: Buffer, count_buffer_offset: u64, max_count: u32) void;
 
-    pub inline fn beginOcclusionQuery(self: RenderPassEncoder, query_index: u32) void {
-        return wgpuRenderPassEncoderBeginOcclusionQuery(self, query_index);
-    }
-    extern fn wgpuRenderPassEncoderBeginOcclusionQuery(renderPassEncoder: RenderPassEncoder, queryIndex: u32) void;
-
     pub inline fn beginPipelineStatisticsQuery(self: RenderPassEncoder, query_set: QuerySet, query_index: u32) void {
         return wgpuRenderPassEncoderBeginPipelineStatisticsQuery(self, query_set, query_index);
     }
     extern fn wgpuRenderPassEncoderBeginPipelineStatisticsQuery(renderPassEncoder: RenderPassEncoder, querySet: QuerySet, queryIndex: u32) void;
+
+    pub inline fn endPipelineStatisticsQuery(self: RenderPassEncoder) void {
+        return wgpuRenderPassEncoderEndPipelineStatisticsQuery(self);
+    }
+    extern fn wgpuRenderPassEncoderEndPipelineStatisticsQuery(renderPassEncoder: RenderPassEncoder) void;
+
+    pub inline fn beginOcclusionQuery(self: RenderPassEncoder, query_index: u32) void {
+        return wgpuRenderPassEncoderBeginOcclusionQuery(self, query_index);
+    }
+    extern fn wgpuRenderPassEncoderBeginOcclusionQuery(renderPassEncoder: RenderPassEncoder, queryIndex: u32) void;
 
     pub inline fn draw(self: RenderPassEncoder, vertex_count: u32, instance_count: u32, first_vertex: u32, first_instance: u32) void {
         return wgpuRenderPassEncoderDraw(self, vertex_count, instance_count, first_vertex, first_instance);
@@ -2020,11 +2033,6 @@ pub const RenderPassEncoder = *opaque {
         return wgpuRenderPassEncoderEndOcclusionQuery(self);
     }
     extern fn wgpuRenderPassEncoderEndOcclusionQuery(renderPassEncoder: RenderPassEncoder) void;
-
-    pub inline fn endPipelineStatisticsQuery(self: RenderPassEncoder) void {
-        return wgpuRenderPassEncoderEndPipelineStatisticsQuery(self);
-    }
-    extern fn wgpuRenderPassEncoderEndPipelineStatisticsQuery(renderPassEncoder: RenderPassEncoder) void;
 
     pub inline fn executeBundles(self: RenderPassEncoder, bundle_count: usize, bundles: *const RenderBundle) void {
         return wgpuRenderPassEncoderExecuteBundles(self, bundle_count, bundles);
