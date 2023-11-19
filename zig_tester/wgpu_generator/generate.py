@@ -101,9 +101,6 @@ def main(args):
     # copy the webgpu-headers repo file locally so we get git diffs when it changes
     shutil.copyfile("../../ffi/webgpu-headers/webgpu.h", "../../ffi/webgpu.h")
 
-    zig_api = ZigApi()
-    zig_api.parse()
-
     applyDefaultArgs(args)
     template, meta = loadTemplate(args.template)
     api = WebGpuApi()
@@ -111,6 +108,9 @@ def main(args):
         header = downloadHeader(url)
         parseHeader(api, header)
     loadDefaults(args, api)
+
+    zig_api = ZigApi()
+    zig_api.parse(api.handles)
 
     if args.pplux:
         binding = producePpluxBinding(api)
@@ -200,15 +200,17 @@ class WebGpuApi:
 class ZigApi:
     methods: dict[str,str] = field(default_factory=dict)
     structs: dict[str,list] = field(default_factory=dict)
+    handles: list[HandleApi] = None
 
-    def parse(self):
+    def parse(self, handles: list[HandleApi]):
+        self.handles = handles
         fn_re = re.compile(r"pub extern fn (.*?)\(")
         struct_re = re.compile(r"pub const struct_WGPU(.*?)\s")
 
         it = iter(os.popen('zig translate-c ../../ffi/wgpu.h').read().splitlines())
         while (x := next(it, None)) is not None:
             if (match := fn_re.search(x)):
-                self.methods[match.group(1)] = self.convert_types(x[3:]) # x[3:].replace("WGPUBool", "bool").replace("WGPU", "").replace("Flags", "")
+                self.methods[match.group(1)] = self.convert_types(x[3:], False) # x[3:].replace("WGPUBool", "bool").replace("WGPU", "").replace("Flags", "")
                 continue
 
             if (match := struct_re.search(x)):
@@ -227,12 +229,26 @@ class ZigApi:
 
             # fix up the WGPU* type names and field names
             if (match := field_re.match(x)):
-                lines.append(self.convert_types(x.replace(match.group(1), to_snake_case(match.group(1)))))
+                lines.append( self.convert_types(x.replace(match.group(1), to_snake_case(match.group(1))), True) )
 
         self.structs[name] = lines
 
-    def convert_types(self, x):
+    def convert_types(self, x, is_struct):
+        handle_re = re.compile(r".*\bWGPU(.*?)\b.*")
+        if is_struct:
+            if (match := handle_re.search(x)):
+                if self.is_handle(match.group(1)):
+                    # twice because of the field type and zeroes of it
+                    x = re.sub(r'(.*)\bWGPU(.*?)\b(.*)', r'\1?\2\3', x)
+                    x = re.sub(r'(.*)\bWGPU(.*?)\b(.*)', r'\1?\2\3', x)
+            
         return x.replace("struct_", "").replace("WGPUBool", "bool").replace("WGPU", "").replace("Flags", "")
+
+    def is_handle(self, x):
+        for handle in self.handles:
+            if handle.name == x:
+                return True
+        return False
 
 
 class Peekable(object):
@@ -606,7 +622,7 @@ def produceBinding(api, meta, zig_api):
                 continue
             method_name = proc.name[0].lower() + proc.name[1:]
 
-            arguments, argument_names = [f"self: {handle.name}"], []
+            arguments, argument_names = [f"self: *Self"], []
             skip_next = False
             for arg in proc.arguments[1:]:
                 # HACK: rename because we have a method called reference
@@ -741,6 +757,7 @@ def produceBinding(api, meta, zig_api):
         # )
         binding["handles_impl"].append(
             f"pub const {handle.name} = *opaque {{\n"
+            + "\tconst Self = @This();\n\n"
             + "".join(implems)
             + "};\n"
         )
@@ -1028,6 +1045,8 @@ def c_type_to_zig_type(type, nullable, proc_name, prev_arg_name):
             return "[*c]const u8"
         case "WGPUBool":
             return "bool"
+
+    # print('------ ', type, nullable)
 
     if type.endswith("uint32_t const *"): # TODO: better binding override for the function call?
         return "?[*]const u32"
