@@ -242,7 +242,7 @@ class ZigApi:
                     x = re.sub(r'(.*)\bWGPU(.*?)\b(.*)', r'\1?\2\3', x)
                     x = re.sub(r'(.*)\bWGPU(.*?)\b(.*)', r'\1?\2\3', x)
             
-        return x.replace("struct_", "").replace("WGPUBool", "bool").replace("WGPU", "").replace("Flags", "")
+        return x.replace("struct_", "").replace("WGPU", "").replace("Flags", "")
 
     def is_handle(self, x):
         for handle in self.handles:
@@ -1044,7 +1044,7 @@ def c_type_to_zig_type(type, nullable, proc_name, prev_arg_name):
         case "const char *":
             return "[*c]const u8"
         case "WGPUBool":
-            return "bool"
+            return "Bool"
 
     # print('------ ', type, nullable)
 

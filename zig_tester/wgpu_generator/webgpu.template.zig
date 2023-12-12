@@ -8,6 +8,11 @@ const wgpu = @import("wgpu.zig");
 {{end-blacklist}}
 
 // Injected
+pub const Bool = enum(u32) {
+    false,
+    true,
+};
+
 pub const SubmissionIndex = u64;
 
 pub const InstanceBackend = enum(u32) {
