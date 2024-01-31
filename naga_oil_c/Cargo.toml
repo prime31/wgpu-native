@@ -5,14 +5,14 @@ edition = "2021"
 
 [dependencies]
 naga_oil = "*"
-naga = "0.13.0"
+naga = { version = "*", features = ["wgsl-out"] }
 
 [build-dependencies]
 cbindgen = "*"
 
 [profile.release]
-strip = true  # Automatically strip symbols from the binary.
-opt-level = "z"  # Optimize for size.
+strip = true      # Automatically strip symbols from the binary.
+opt-level = "z"   # Optimize for size.
 lto = true
 codegen-units = 1
 panic = "abort"
